@@ -6,7 +6,7 @@ import axios from "axios"
 import { toast } from "sonner"
 import { Search, MapPin, Loader2, X } from "lucide-react"
 
-export function AddStopModal({ isOpen, onClose, tripId, lastOrder }: any) {
+export function AddStopModal({ isOpen, onClose, tripId, lastOrder, existingStops }: any) {
   const [search, setSearch] = useState("")
   const queryClient = useQueryClient()
 
@@ -39,6 +39,15 @@ export function AddStopModal({ isOpen, onClose, tripId, lastOrder }: any) {
       toast.error(error.response?.data?.error || "Failed to add stop")
     }
   })
+
+  const handleAddStop = (city: any) => {
+    const isDuplicate = existingStops?.some((s: any) => s.cityName.toLowerCase() === city.name.toLowerCase())
+    if (isDuplicate) {
+      toast.error(`${city.name} is already in your itinerary!`)
+      return
+    }
+    mutation.mutate(city)
+  }
 
   if (!isOpen) return null
 
@@ -74,7 +83,7 @@ export function AddStopModal({ isOpen, onClose, tripId, lastOrder }: any) {
             cities.map((city: any) => (
               <button 
                 key={city.id}
-                onClick={() => mutation.mutate(city)}
+                onClick={() => handleAddStop(city)}
                 disabled={mutation.isPending}
                 className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all group text-left"
               >

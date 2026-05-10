@@ -4,21 +4,24 @@ import { PageHeader } from "@/components/shared/PageHeader"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
 import { useState } from "react"
-import { Heart, MessageCircle, Share2, MapPin, Plus, Users } from "lucide-react"
+import { Heart, MessageCircle, Share2, MapPin, Plus, Users, Globe } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { SkeletonCard } from "@/components/shared/SkeletonCard"
 import Link from "next/link"
 import { toast } from "sonner"
 import { useSession } from "next-auth/react"
+import { ShareTripModal } from "@/components/community/ShareTripModal"
 
 export default function CommunityTab() {
   const { data: session } = useSession()
   const queryClient = useQueryClient()
+  const [filter, setFilter] = useState("All")
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ['community-posts'],
+    queryKey: ['community-posts', filter],
     queryFn: async ({ pageParam = 1 }) => {
-      const res = await axios.get(`/api/community?page=${pageParam}`)
+      const res = await axios.get(`/api/community?page=${pageParam}&filter=${filter}`)
       return res.data
     },
     getNextPageParam: (lastPage) => lastPage.nextPage,
@@ -32,21 +35,32 @@ export default function CommunityTab() {
       <PageHeader 
         title="Community" 
         actions={
-          <Link href="/trips">
-            <button className="bg-[#F59E0B] hover:bg-[#d98b0a] text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-md flex items-center gap-2 hover:scale-105 active:scale-95">
-              <Plus className="w-5 h-5" /> Share My Trip
-            </button>
-          </Link>
+          <button 
+            onClick={() => setIsShareModalOpen(true)}
+            className="bg-[#F59E0B] hover:bg-[#d98b0a] text-white px-5 py-2.5 rounded-lg font-black transition-all shadow-md flex items-center gap-2 hover:scale-105 active:scale-95 uppercase tracking-wider text-xs"
+          >
+            <Plus className="w-5 h-5" /> Share My Trip
+          </button>
         }
       />
+
+      <ShareTripModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} />
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Column - Feed */}
         <div className="lg:w-[65%] space-y-6">
           <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
-            {['All', 'Recent', 'Most Liked', 'My Posts'].map((filter, i) => (
-              <button key={filter} className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${i === 0 ? 'bg-[#1E1B4B] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                {filter}
+            {['All', 'Recent', 'Most Liked', 'My Posts'].map((f) => (
+              <button 
+                key={f} 
+                onClick={() => setFilter(f)}
+                className={`px-4 py-1.5 rounded-full text-sm font-black whitespace-nowrap transition-all ${
+                  filter === f 
+                    ? 'bg-[#6C47FF] text-white shadow-lg scale-105' 
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {f}
               </button>
             ))}
           </div>
@@ -128,10 +142,12 @@ export default function CommunityTab() {
 }
 
 function PostCard({ post }: { post: any }) {
-  const [liked, setLiked] = useState(false)
-  const [likes, setLikes] = useState(post.likesCount || post.likes || 0)
+  const [liked, setLiked] = useState(post.isLiked)
+  const [likes, setLikes] = useState(post.likesCount || 0)
   const [isLiking, setIsLiking] = useState(false)
   const [showComments, setShowComments] = useState(false)
+  const [comments, setComments] = useState(post.comments || [])
+  const [commentText, setCommentText] = useState("")
 
   const handleLike = async () => {
     if (isLiking) return
@@ -145,12 +161,23 @@ function PostCard({ post }: { post: any }) {
     try {
       await axios.post('/api/community/like', { postId: post.id })
     } catch (error) {
-      // Rollback
       setLiked(!newLiked)
       setLikes((prev: number) => !newLiked ? prev + 1 : prev - 1)
       toast.error("Failed to update like")
     } finally {
       setIsLiking(false)
+    }
+  }
+
+  const handleComment = async () => {
+    if (!commentText.trim()) return
+    try {
+      const res = await axios.post('/api/community/comment', { postId: post.id, content: commentText })
+      setComments([...comments, res.data])
+      setCommentText("")
+      toast.success("Comment added!")
+    } catch (error) {
+      toast.error("Failed to add comment")
     }
   }
 
@@ -169,7 +196,12 @@ function PostCard({ post }: { post: any }) {
         </button>
       </div>
 
-      <h4 className="font-black text-2xl text-[#1E1B4B] font-heading mb-3 leading-tight">{post.title}</h4>
+      <div className="flex items-center gap-3 mb-3">
+        <h4 className="font-black text-2xl text-[#1E1B4B] font-heading leading-tight">{post.title}</h4>
+        {post.isTemplate && (
+          <span className="bg-amber-100 text-amber-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">Community Template</span>
+        )}
+      </div>
       <p className="text-gray-600 mb-6 text-lg leading-relaxed">{post.body}</p>
 
       {post.trip && (
@@ -185,7 +217,7 @@ function PostCard({ post }: { post: any }) {
                 : "Itinerary Details"}
             </p>
           </div>
-          <Link href={`/trips/${post.trip.id}`} className="shrink-0 w-full sm:w-auto">
+          <Link href={`/trips/${post.trip.id}/share`} className="shrink-0 w-full sm:w-auto">
             <button className="w-full sm:w-auto bg-white text-[#6C47FF] text-sm font-black px-5 py-2.5 rounded-xl border border-gray-200 hover:border-[#6C47FF] transition-all shadow-sm active:scale-95">
               View Itinerary
             </button>
@@ -210,7 +242,21 @@ function PostCard({ post }: { post: any }) {
       </div>
 
       {showComments && (
-        <div className="mt-6 pt-6 border-t border-gray-50 space-y-4">
+        <div className="mt-6 pt-6 border-t border-gray-50 space-y-6">
+          <div className="space-y-4">
+            {comments.map((comment: any) => (
+              <div key={comment.id} className="flex gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0 text-[10px] font-black text-[#6C47FF]">
+                  {comment.user.image ? <img src={comment.user.image} className="w-full h-full rounded-lg object-cover" /> : comment.user.name.charAt(0)}
+                </div>
+                <div className="flex-1 bg-gray-50 rounded-2xl p-3">
+                  <p className="text-[10px] font-black text-gray-900 mb-0.5">{comment.user.name}</p>
+                  <p className="text-sm text-gray-600">{comment.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="flex gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
               <Users className="w-4 h-4 text-gray-400" />
@@ -219,9 +265,11 @@ function PostCard({ post }: { post: any }) {
               type="text" 
               placeholder="Write a reply..."
               className="flex-1 bg-gray-50 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[#6C47FF] outline-none"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  toast.info("Comment system coming soon in the next update!")
+                  handleComment()
                 }
               }}
             />

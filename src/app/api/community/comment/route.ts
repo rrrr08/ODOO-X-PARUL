@@ -11,23 +11,19 @@ export async function POST(req: Request) {
     }
 
     const { postId, content } = await req.json()
-
-    if (!postId || !content) {
-      return NextResponse.json({ error: "Post ID and content are required" }, { status: 400 })
+    if (!content) {
+      return NextResponse.json({ error: "Comment content is required" }, { status: 400 })
     }
 
     const comment = await prisma.comment.create({
       data: {
         postId,
-        content,
-        userId: session.user.id
+        userId: session.user.id,
+        content
       },
       include: {
         user: {
-          select: {
-            name: true,
-            image: true
-          }
+          select: { name: true, image: true }
         }
       }
     })

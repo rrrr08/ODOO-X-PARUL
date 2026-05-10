@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Search as SearchIcon, Filter, ArrowUpDown } from "lucide-react"
 
 interface SearchLayoutProps {
@@ -12,6 +12,7 @@ interface SearchLayoutProps {
 export function SearchLayout({ children, placeholder = "Search cities and activities..." }: SearchLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [query, setQuery] = useState("")
 
   const handleSearch = (e: React.FormEvent) => {
@@ -62,15 +63,57 @@ export function SearchLayout({ children, placeholder = "Search cities and activi
         </div>
 
         <div className="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0">
-          <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 whitespace-nowrap">
-            Group by
-          </button>
-          <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 whitespace-nowrap">
-            <Filter className="w-4 h-4" /> Filter
-          </button>
-          <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 whitespace-nowrap">
-            <ArrowUpDown className="w-4 h-4" /> Sort by
-          </button>
+          <div className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Group:</span>
+            <select 
+              value={searchParams.get('groupBy') || 'None'} 
+              onChange={(e) => {
+                const sp = new URLSearchParams(searchParams)
+                sp.set('groupBy', e.target.value)
+                router.replace(`${pathname}?${sp.toString()}`)
+              }}
+              className="bg-transparent border-none text-xs font-bold text-[#1E1B4B] focus:ring-0 p-0 cursor-pointer"
+            >
+              <option value="None">None</option>
+              <option value="Category">Category</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+            <Filter className="w-3.5 h-3.5" />
+            <select 
+              value={searchParams.get('filterBy') || 'All'} 
+              onChange={(e) => {
+                const sp = new URLSearchParams(searchParams)
+                sp.set('filterBy', e.target.value)
+                router.replace(`${pathname}?${sp.toString()}`)
+              }}
+              className="bg-transparent border-none text-xs font-bold text-[#1E1B4B] focus:ring-0 p-0 cursor-pointer"
+            >
+              <option value="All">All Price</option>
+              <option value="Budget">Budget ($)</option>
+              <option value="Mid">Mid ($$)</option>
+              <option value="Luxury">Luxury ($$$)</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 whitespace-nowrap">
+            <ArrowUpDown className="w-3.5 h-3.5" />
+            <select 
+              value={searchParams.get('sortBy') || 'Popular'} 
+              onChange={(e) => {
+                const sp = new URLSearchParams(searchParams)
+                sp.set('sortBy', e.target.value)
+                router.replace(`${pathname}?${sp.toString()}`)
+              }}
+              className="bg-transparent border-none text-xs font-bold text-[#1E1B4B] focus:ring-0 p-0 cursor-pointer"
+            >
+              <option value="Popular">Popular</option>
+              <option value="PriceLow">Price: Low-High</option>
+              <option value="PriceHigh">Price: High-Low</option>
+              <option value="Duration">Duration</option>
+            </select>
+          </div>
         </div>
       </div>
 

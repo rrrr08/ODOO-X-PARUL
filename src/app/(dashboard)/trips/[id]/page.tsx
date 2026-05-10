@@ -289,6 +289,7 @@ export default function ItineraryBuilder() {
         onClose={() => setIsStopModalOpen(false)} 
         tripId={params.id} 
         lastOrder={trip?.stops?.length}
+        existingStops={trip?.stops}
       />
 
       <AddActivityModal 

@@ -12,11 +12,7 @@ export async function POST(req: Request) {
 
     const { postId } = await req.json()
 
-    if (!postId) {
-      return NextResponse.json({ error: "Post ID is required" }, { status: 400 })
-    }
-
-    // Check if like exists
+    // Check if already liked
     const existingLike = await prisma.like.findUnique({
       where: {
         postId_userId: {
@@ -28,30 +24,18 @@ export async function POST(req: Request) {
 
     if (existingLike) {
       // Unlike
-      await prisma.$transaction([
-        prisma.like.delete({
-          where: { id: existingLike.id }
-        }),
-        prisma.communityPost.update({
-          where: { id: postId },
-          data: { likesCount: { decrement: 1 } }
-        })
-      ])
+      await prisma.like.delete({
+        where: { id: existingLike.id }
+      })
       return NextResponse.json({ liked: false })
     } else {
       // Like
-      await prisma.$transaction([
-        prisma.like.create({
-          data: {
-            postId,
-            userId: session.user.id
-          }
-        }),
-        prisma.communityPost.update({
-          where: { id: postId },
-          data: { likesCount: { increment: 1 } }
-        })
-      ])
+      await prisma.like.create({
+        data: {
+          postId,
+          userId: session.user.id
+        }
+      })
       return NextResponse.json({ liked: true })
     }
   } catch (error: any) {
