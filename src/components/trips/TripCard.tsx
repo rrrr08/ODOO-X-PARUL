@@ -1,7 +1,13 @@
+'use client'
+
 import { format } from "date-fns"
 import { getTripStatus } from "@/lib/utils"
 import Link from "next/link"
-import { MoreVertical } from "lucide-react"
+import { MoreVertical, Globe, Lock } from "lucide-react"
+import { useState } from "react"
+import axios from "axios"
+import { toast } from "sonner"
+import { useQueryClient } from "@tanstack/react-query"
 
 interface TripCardProps {
   trip: any
@@ -9,25 +15,54 @@ interface TripCardProps {
 }
 
 export function TripCard({ trip, variant = 'wide' }: TripCardProps) {
+  const queryClient = useQueryClient()
   const status = getTripStatus(trip.startDate, trip.endDate)
   const isThumbnail = variant === 'thumbnail'
   const stopCount = trip.stops?.length || 0
   const spent = trip.expenses?.reduce((acc: number, e: any) => acc + e.amount, 0) || 0
+  
+  const [isPublic, setIsPublic] = useState(trip.isPublic)
+  const [isToggling, setIsToggling] = useState(false)
+
+  const handleTogglePublic = async (e: React.MouseEvent) => {
+    e.preventDefault() // Prevent link navigation
+    e.stopPropagation()
+    
+    if (isToggling) return
+    setIsToggling(true)
+    
+    const newStatus = !isPublic
+    setIsPublic(newStatus)
+
+    try {
+      await axios.patch(`/api/trips/${trip.id}`, { isPublic: newStatus })
+      toast.success(newStatus ? "Trip shared to community!" : "Trip made private")
+      queryClient.invalidateQueries({ queryKey: ['community-posts'] })
+    } catch (error) {
+      setIsPublic(!newStatus)
+      toast.error("Failed to update trip status")
+    } finally {
+      setIsToggling(false)
+    }
+  }
 
   return (
     <Link href={`/trips/${trip.id}`} className={`block bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden hover:bg-[#F5F3FF] transition-all hover:shadow-lg ${isThumbnail ? 'w-40 min-w-40' : 'w-full'}`}>
       <div className={`flex ${isThumbnail ? 'flex-col' : 'flex-row items-center'} gap-4 p-4`}>
-        <div className={`${isThumbnail ? 'w-full h-24' : 'w-20 h-20'} rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 overflow-hidden shrink-0`}>
+        <div className={`${isThumbnail ? 'w-full h-24' : 'w-20 h-20'} rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 overflow-hidden shrink-0 shadow-inner`}>
           {trip.coverUrl && <img src={trip.coverUrl} alt={trip.title} className="w-full h-full object-cover" />}
         </div>
         
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-[#1E1B4B] font-heading truncate">{trip.title}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-[#1E1B4B] font-heading truncate">{trip.title}</h3>
+            {isPublic ? <Globe className="w-3.5 h-3.5 text-[#6C47FF]" /> : <Lock className="w-3.5 h-3.5 text-gray-300" />}
+          </div>
           <p className="text-sm text-gray-500 mt-1">{format(new Date(trip.startDate), 'MMM d')} – {format(new Date(trip.endDate), 'MMM d, yyyy')}</p>
           
           {!isThumbnail && (
             <div className="flex items-center gap-4 mt-3 text-sm">
-              <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">{stopCount} cities</span>
+              <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-medium">{stopCount} cities</span>
               {trip.totalBudget && (
                 <div className="flex-1 max-w-[150px] flex items-center gap-2">
                   <div className="h-1.5 flex-1 bg-gray-200 rounded-full overflow-hidden">
@@ -40,8 +75,21 @@ export function TripCard({ trip, variant = 'wide' }: TripCardProps) {
         </div>
 
         {!isThumbnail && (
-          <div className="flex items-center gap-3 ml-auto pl-4">
-            <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
+          <div className="flex items-center gap-4 ml-auto pl-4">
+            <button 
+              onClick={handleTogglePublic}
+              disabled={isToggling}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                isPublic 
+                  ? 'bg-indigo-50 text-[#6C47FF] border-indigo-100 hover:bg-indigo-100' 
+                  : 'bg-white text-gray-400 border-gray-100 hover:text-gray-600 hover:border-gray-200'
+              }`}
+            >
+              {isPublic ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+              {isPublic ? "Public" : "Private"}
+            </button>
+
+            <span className={`px-2.5 py-1.5 rounded-full text-xs font-bold border ${
               status === 'ongoing' ? 'bg-green-50 text-green-700 border-green-200' :
               status === 'upcoming' ? 'bg-blue-50 text-blue-700 border-blue-200' :
               'bg-gray-50 text-gray-700 border-gray-200'

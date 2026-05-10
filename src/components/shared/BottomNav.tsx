@@ -4,7 +4,7 @@ import { Home, Map, Search, Users, User } from "lucide-react"
 export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around items-center h-16 md:hidden z-50 no-print">
-      <Link href="/" className="flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-[#6C47FF]">
+      <Link href="/dashboard" className="flex flex-col items-center justify-center w-full h-full text-gray-500 hover:text-[#6C47FF]">
         <Home className="w-6 h-6" />
         <span className="text-[10px] mt-1">Home</span>
       </Link>

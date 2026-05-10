@@ -13,7 +13,7 @@ export function Sidebar() {
           <span>Traveloop</span>
         </div>
         <nav className="space-y-2">
-          <Link href="/" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+          <Link href="/dashboard" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
             <Home className="w-5 h-5" />
             <span>Home</span>
           </Link>

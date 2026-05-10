@@ -81,3 +81,44 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
+
+export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { isPublic } = await req.json()
+
+    const trip = await prisma.trip.update({
+      where: {
+        id: params.id,
+        userId: session.user.id
+      },
+      data: { isPublic }
+    })
+
+    if (isPublic) {
+      await prisma.communityPost.create({
+        data: {
+          title: `Itinerary for ${trip.title}`,
+          body: trip.description || `Check out my travel plan for ${trip.title}!`,
+          tripId: trip.id,
+          userId: session.user.id,
+        }
+      })
+    } else {
+      await prisma.communityPost.deleteMany({
+        where: {
+          tripId: trip.id,
+          userId: session.user.id
+        }
+      })
+    }
+
+    return Response.json(trip)
+  } catch (error: any) {
+    return Response.json({ error: error.message }, { status: 500 })
+  }
+}

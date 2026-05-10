@@ -85,7 +85,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="lg:w-[60%] bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="font-bold text-[#1E1B4B] font-heading mb-6">Trips Created Per Day (Last 30 Days)</h3>
-          <div className="h-72 w-full">
+          <div className="h-72 w-full min-h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={stats?.tripsPerDay || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
 
         <div className="lg:w-[40%] bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
           <h3 className="font-bold text-[#1E1B4B] font-heading mb-6">Top 5 Cities by Popularity</h3>
-          <div className="flex-1 w-full min-h-[250px]">
+          <div className="flex-1 w-full min-h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
