@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shared/PageHeader"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -13,7 +13,11 @@ import { CalendarIcon, MapPin } from "lucide-react"
 
 const tripSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
-  startDate: z.string().min(1, "Start date is required"),
+  startDate: z.string().min(1, "Start date is required").refine((val) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return new Date(val) >= today
+  }, { message: "Start date cannot be in the past" }),
   endDate: z.string().min(1, "End date is required"),
   description: z.string().optional(),
   totalBudget: z.coerce.number().optional(),
@@ -51,6 +55,7 @@ export default function CreateTrip() {
     }
   })
 
+  const queryClient = useQueryClient()
   const createTripMutation = useMutation({
     mutationFn: async (data: TripFormValues) => {
       const res = await axios.post('/api/trips', data)
@@ -58,6 +63,7 @@ export default function CreateTrip() {
     },
     onSuccess: (data) => {
       toast.success("Trip created!")
+      queryClient.invalidateQueries({ queryKey: ['trips'] })
       router.push(`/trips/${data.id}`)
     },
     onError: () => {
@@ -112,6 +118,7 @@ export default function CreateTrip() {
                   <input 
                     type="date"
                     {...register("startDate")} 
+                    min={new Date().toISOString().split('T')[0]}
                     className="w-full pl-10 border-gray-300 rounded-lg shadow-sm focus:border-[#6C47FF] focus:ring-[#6C47FF] p-2.5 border"
                   />
                 </div>
@@ -125,6 +132,7 @@ export default function CreateTrip() {
                   <input 
                     type="date"
                     {...register("endDate")} 
+                    min={watch("startDate") || new Date().toISOString().split('T')[0]}
                     className="w-full pl-10 border-gray-300 rounded-lg shadow-sm focus:border-[#6C47FF] focus:ring-[#6C47FF] p-2.5 border"
                   />
                 </div>

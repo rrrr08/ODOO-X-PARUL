@@ -105,13 +105,7 @@ export default function CommunityTab() {
               Top Destinations
             </h3>
             <div className="space-y-4">
-              {[
-                { name: 'Tokyo, Japan', count: 124 },
-                { name: 'Paris, France', count: 98 },
-                { name: 'Bali, Indonesia', count: 86 },
-                { name: 'Rome, Italy', count: 72 },
-                { name: 'New York, USA', count: 65 }
-              ].map((dest, i) => (
+              {(data?.pages[0]?.topDestinations || []).map((dest: any, i: number) => (
                 <div key={dest.name} className="flex items-center justify-between group cursor-pointer">
                   <div className="flex items-center gap-3">
                     <span className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-600' : 'bg-gray-50 text-gray-400'}`}>
@@ -122,6 +116,9 @@ export default function CommunityTab() {
                   <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">{dest.count} trips</span>
                 </div>
               ))}
+              {(data?.pages[0]?.topDestinations?.length === 0) && (
+                <p className="text-xs text-gray-400 italic">Exploring new horizons...</p>
+              )}
             </div>
           </div>
         </div>

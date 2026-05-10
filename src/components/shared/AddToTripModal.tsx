@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react"
 export function AddToTripModal({ isOpen, onClose, city, activity }: any) {
   const [selectedTripId, setSelectedTripId] = useState("")
   const [selectedStopId, setSelectedStopId] = useState("")
+  const [scheduledAt, setScheduledAt] = useState("")
   const queryClient = useQueryClient()
 
   const { data: trips, isLoading: loadingTrips } = useQuery({
@@ -38,6 +39,7 @@ export function AddToTripModal({ isOpen, onClose, city, activity }: any) {
           description: activity.description,
           cost: activity.cost,
           duration: activity.duration,
+          scheduledAt: scheduledAt || null
         })
       } else if (city) {
         return axios.post(`/api/trips/${selectedTripId}/stops`, {
@@ -108,6 +110,21 @@ export function AddToTripModal({ isOpen, onClose, city, activity }: any) {
                 ))}
               </select>
               {loadingStops && <p className="text-xs text-gray-400 mt-1 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Loading stops...</p>}
+            </div>
+          )}
+
+          {selectedStopId && (
+            <div className="animate-in slide-in-from-top-2 duration-300">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Schedule Date (Optional)</label>
+              <input 
+                type="date" 
+                className="w-full border-gray-200 rounded-xl shadow-sm focus:border-[#6C47FF] focus:ring-[#6C47FF] p-3 border transition-all"
+                value={scheduledAt}
+                min={trips?.find((t:any)=>t.id === selectedTripId)?.startDate?.split('T')[0]}
+                max={trips?.find((t:any)=>t.id === selectedTripId)?.endDate?.split('T')[0]}
+                onChange={(e) => setScheduledAt(e.target.value)}
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Assign to a specific day in your itinerary.</p>
             </div>
           )}
 

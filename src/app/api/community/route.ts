@@ -51,8 +51,23 @@ export async function GET(req: Request) {
       }
     }))
 
+    // Fetch top destinations (real data based on stops)
+    const topDestinations = await prisma.stop.groupBy({
+      by: ['cityName'],
+      _count: {
+        _all: true
+      },
+      orderBy: {
+        _count: {
+          cityName: 'desc'
+        }
+      },
+      take: 5
+    })
+
     return NextResponse.json({
       posts,
+      topDestinations: topDestinations.map(d => ({ name: d.cityName, count: d._count._all })),
       nextPage: posts.length === limit ? page + 1 : null
     })
   } catch (error: any) {

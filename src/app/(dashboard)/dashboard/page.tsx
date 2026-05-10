@@ -24,7 +24,7 @@ export default function Dashboard() {
   })
 
   const { data: recentTrips, isLoading: loadingTrips } = useQuery({
-    queryKey: ['recentTrips'],
+    queryKey: ['trips', { limit: 4 }],
     queryFn: async () => {
       const res = await axios.get('/api/trips?limit=4')
       return res.data
@@ -37,6 +37,23 @@ export default function Dashboard() {
       router.push(`/search/cities?q=${encodeURIComponent(searchQuery)}`)
     }
   }
+
+  const comparisonNow = new Date()
+  const ongoing = recentTrips?.filter((t: any) => {
+    const s = new Date(t.startDate); s.setHours(0,0,0,0)
+    const e = new Date(t.endDate); e.setHours(23,59,59,999)
+    return comparisonNow >= s && comparisonNow <= e
+  }) || []
+  
+  const upcoming = recentTrips?.filter((t: any) => {
+    const s = new Date(t.startDate); s.setHours(0,0,0,0)
+    return comparisonNow < s
+  }) || []
+
+  const completed = recentTrips?.filter((t: any) => {
+    const e = new Date(t.endDate); e.setHours(23,59,59,999)
+    return comparisonNow > e
+  }) || []
 
   return (
     <div className="space-y-10 pb-10">
@@ -109,7 +126,7 @@ export default function Dashboard() {
             <SkeletonCard lines={2} height="h-64" />
             <SkeletonCard lines={2} height="h-64" />
           </div>
-        ) : !recentTrips?.ongoing?.length && !recentTrips?.upcoming?.length && !recentTrips?.completed?.length ? (
+        ) : !recentTrips?.length ? (
           <EmptyState 
             icon={<Globe className="w-16 h-16 text-[#6C47FF]/40" />}
             title="Start your first trip"
@@ -119,14 +136,14 @@ export default function Dashboard() {
         ) : (
           <div className="space-y-12">
             {/* Ongoing Trips */}
-            {recentTrips?.ongoing?.length > 0 && (
+            {ongoing.length > 0 && (
               <div className="animate-in slide-in-from-left-4 duration-500">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-2 h-8 bg-[#6C47FF] rounded-full" />
                   <h3 className="text-xl font-bold text-gray-800 uppercase tracking-wider">Ongoing Trips</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {recentTrips.ongoing.map((trip: any) => (
+                  {ongoing.map((trip: any) => (
                     <TripCard key={trip.id} trip={trip} isOngoing />
                   ))}
                 </div>
@@ -134,14 +151,14 @@ export default function Dashboard() {
             )}
 
             {/* Upcoming Trips */}
-            {recentTrips?.upcoming?.length > 0 && (
+            {upcoming.length > 0 && (
               <div className="animate-in slide-in-from-left-4 duration-500 delay-100">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-2 h-8 bg-[#F59E0B] rounded-full" />
                   <h3 className="text-xl font-bold text-gray-800 uppercase tracking-wider">Upcoming Trips</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {recentTrips.upcoming.map((trip: any) => (
+                  {upcoming.map((trip: any) => (
                     <TripCard key={trip.id} trip={trip} />
                   ))}
                 </div>
@@ -149,14 +166,14 @@ export default function Dashboard() {
             )}
 
             {/* Completed Trips */}
-            {recentTrips?.completed?.length > 0 && (
+            {completed.length > 0 && (
               <div className="animate-in slide-in-from-left-4 duration-500 delay-200">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-2 h-8 bg-gray-300 rounded-full" />
                   <h3 className="text-xl font-bold text-gray-500 uppercase tracking-wider">Previous Trips</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {recentTrips.completed.map((trip: any) => (
+                  {completed.map((trip: any) => (
                     <div key={trip.id} className="opacity-70 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
                       <TripCard trip={trip} isSmall />
                     </div>

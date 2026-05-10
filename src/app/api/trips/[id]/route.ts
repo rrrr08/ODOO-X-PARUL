@@ -6,14 +6,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    const userId = session?.user?.id
 
     const trip = await prisma.trip.findFirst({
       where: {
         id,
-        userId: session.user.id
+        OR: userId ? [
+          { userId: userId },
+          { isPublic: true }
+        ] : [
+          { isPublic: true }
+        ]
       },
       include: {
         stops: {
@@ -36,6 +39,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     return Response.json(trip)
   } catch (error: any) {
+    console.error("[TRIP_GET_ERROR]", error)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
@@ -60,6 +64,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     return Response.json(trip)
   } catch (error: any) {
+    console.error("[TRIP_PUT_ERROR]", error)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
@@ -81,6 +86,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
     return Response.json({ success: true })
   } catch (error: any) {
+    console.error("[TRIP_DELETE_ERROR]", error)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
@@ -93,36 +99,39 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { isPublic } = await req.json()
+    const body = await req.json()
 
     const trip = await prisma.trip.update({
       where: {
         id,
         userId: session.user.id
       },
-      data: { isPublic }
+      data: body
     })
 
-    if (isPublic) {
-      await prisma.communityPost.create({
-        data: {
-          title: `Itinerary for ${trip.title}`,
-          body: trip.description || `Check out my travel plan for ${trip.title}!`,
-          tripId: trip.id,
-          userId: session.user.id,
-        }
-      })
-    } else {
-      await prisma.communityPost.deleteMany({
-        where: {
-          tripId: trip.id,
-          userId: session.user.id
-        }
-      })
+    if (body.isPublic !== undefined) {
+      if (body.isPublic) {
+        await prisma.communityPost.create({
+          data: {
+            title: `Itinerary for ${trip.title}`,
+            body: trip.description || `Check out my travel plan for ${trip.title}!`,
+            tripId: trip.id,
+            userId: session.user.id,
+          }
+        })
+      } else {
+        await prisma.communityPost.deleteMany({
+          where: {
+            tripId: trip.id,
+            userId: session.user.id
+          }
+        })
+      }
     }
 
     return Response.json(trip)
   } catch (error: any) {
+    console.error("[TRIP_PATCH_ERROR]", error)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }

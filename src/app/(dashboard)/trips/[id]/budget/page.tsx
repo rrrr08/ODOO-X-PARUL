@@ -9,10 +9,12 @@ import Link from "next/link"
 import { ChevronLeft, Download, FileText, Plus, Trash2 } from "lucide-react"
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { useState } from "react"
+import { toast } from "sonner"
 
 export default function ExpenseInvoice() {
   const params = useParams()
-  const [taxPercent, setTaxPercent] = useState(0)
+  const [taxPercent, setTaxPercent] = useState(10)
+  const [isPaid, setIsPaid] = useState(false)
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ['trip', params.id],
@@ -22,36 +24,48 @@ export default function ExpenseInvoice() {
     }
   })
 
-  // Mock expenses if none
-  const mockExpenses = [
-    { id: '1', category: 'Flight', description: 'Round trip flights', quantity: 2, unitCost: 450, amount: 900 },
-    { id: '2', category: 'Hotel', description: 'Marriott Downtown (4 nights)', quantity: 4, unitCost: 150, amount: 600 },
-    { id: '3', category: 'Food', description: 'Dinner at Le Jules Verne', quantity: 1, unitCost: 240, amount: 240 },
-  ]
-
-  const expenses = trip?.expenses?.length ? trip.expenses : mockExpenses
-  
   if (isLoading) {
     return <SkeletonCard height="h-[600px]" lines={8} />
   }
 
-  const subtotal = expenses.reduce((sum: number, e: any) => sum + e.amount, 0)
+  const budget = trip?.totalBudget || 0
+  const manualExpenses = trip?.expenses || []
+  
+  // Combine manual expenses and activities with costs
+  const activityExpenses = trip?.stops?.flatMap((s: any) => 
+    (s.activities || []).map((a: any) => ({
+      id: a.id,
+      category: a.category || 'Activity',
+      description: a.name,
+      quantity: 1,
+      unitCost: a.cost || 0,
+      amount: a.cost || 0,
+      isActivity: true
+    }))
+  ) || []
+
+  const allExpenses = [...manualExpenses, ...activityExpenses]
+  const subtotal = allExpenses.reduce((sum: number, e: any) => sum + e.amount, 0)
   const taxAmount = (subtotal * taxPercent) / 100
   const grandTotal = subtotal + taxAmount
-  const budget = trip?.totalBudget || 5000
 
   // Category data for charts
   const categoryTotals: Record<string, number> = {}
-  expenses.forEach((e: any) => {
-    categoryTotals[e.category] = (categoryTotals[e.category] || 0) + e.amount
+  allExpenses.forEach((e: any) => {
+    const cat = e.category || 'Other'
+    categoryTotals[cat] = (categoryTotals[cat] || 0) + e.amount
   })
   
   const barData = Object.entries(categoryTotals).map(([name, value]) => ({ name, value }))
-  
   const COLORS = ['#6C47FF', '#F59E0B', '#10B981', '#F43F5E', '#3B82F6', '#8B5CF6']
 
   const handlePrint = () => {
     window.print()
+  }
+
+  const handleMarkPaid = () => {
+    setIsPaid(!isPaid)
+    toast.success(isPaid ? "Status set to Pending" : "Invoice marked as Paid!")
   }
 
   return (
@@ -83,8 +97,8 @@ export default function ExpenseInvoice() {
               <p className="text-gray-500">Date: {format(new Date(), 'MMM d, yyyy')}</p>
             </div>
             <div className="text-right">
-              <span className="inline-block bg-yellow-50 text-yellow-700 border border-yellow-200 px-3 py-1 rounded-full text-sm font-bold tracking-wide">
-                PENDING
+              <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold tracking-wide border ${isPaid ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
+                {isPaid ? 'PAID' : 'PENDING'}
               </span>
             </div>
           </div>
@@ -109,18 +123,20 @@ export default function ExpenseInvoice() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {expenses.map((exp: any, i: number) => (
+                {allExpenses.map((exp: any, i: number) => (
                   <tr key={exp.id} className="group hover:bg-gray-50">
                     <td className="py-4 text-gray-500 text-sm">{i + 1}</td>
                     <td className="py-4 font-medium text-gray-900">{exp.category}</td>
                     <td className="py-4 text-gray-600">{exp.description}</td>
-                    <td className="py-4 text-right text-gray-600">{exp.quantity}</td>
-                    <td className="py-4 text-right text-gray-600">${exp.unitCost.toFixed(2)}</td>
-                    <td className="py-4 text-right font-medium text-gray-900">${exp.amount.toFixed(2)}</td>
+                    <td className="py-4 text-right text-gray-600">{exp.quantity || 1}</td>
+                    <td className="py-4 text-right text-gray-600">${(exp.unitCost || 0).toFixed(2)}</td>
+                    <td className="py-4 text-right font-medium text-gray-900">${(exp.amount || 0).toFixed(2)}</td>
                     <td className="py-4 text-right no-print">
-                      <button className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {!exp.isActivity && (
+                        <button className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -157,14 +173,17 @@ export default function ExpenseInvoice() {
 
           {/* Actions */}
           <div className="mt-12 pt-6 border-t border-gray-100 flex flex-wrap justify-end gap-3 no-print">
-            <button className="px-5 py-2.5 rounded-lg border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 flex items-center gap-2">
+            <button onClick={handlePrint} className="px-5 py-2.5 rounded-lg border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 flex items-center gap-2">
               <FileText className="w-4 h-4" /> Export PDF
             </button>
             <button onClick={handlePrint} className="px-5 py-2.5 rounded-lg border border-[#6C47FF] text-[#6C47FF] font-medium hover:bg-indigo-50 flex items-center gap-2">
               <Download className="w-4 h-4" /> Print Invoice
             </button>
-            <button className="px-5 py-2.5 rounded-lg bg-[#10B981] text-white font-medium hover:bg-[#059669] shadow-sm">
-              Mark as Paid
+            <button 
+              onClick={handleMarkPaid}
+              className={`px-5 py-2.5 rounded-lg text-white font-medium shadow-sm transition-all ${isPaid ? 'bg-gray-400 hover:bg-gray-500' : 'bg-[#10B981] hover:bg-[#059669]'}`}
+            >
+              {isPaid ? 'Mark as Pending' : 'Mark as Paid'}
             </button>
           </div>
         </div>

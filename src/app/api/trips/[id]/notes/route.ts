@@ -10,12 +10,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { content, dayTag, stopId } = await req.json()
+    const { content, day, stopId } = await req.json()
 
     const note = await prisma.tripNote.create({
       data: {
         content,
-        dayTag,
+        day: day ? parseInt(day.toString()) : null,
         stopId,
         tripId: id,
         userId: session.user.id
