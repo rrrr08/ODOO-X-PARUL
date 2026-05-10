@@ -15,6 +15,7 @@ export function ShareTripModal({ isOpen, onClose }: { isOpen: boolean, onClose: 
     queryKey: ['trips-for-sharing'],
     queryFn: async () => {
       const res = await axios.get('/api/trips?includeTemplates=true')
+      console.log("[SHARE_MODAL] Fetched trips:", res.data)
       return res.data
     }
   })
@@ -58,6 +59,11 @@ export function ShareTripModal({ isOpen, onClose }: { isOpen: boolean, onClose: 
             <div className="grid gap-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
               {isLoading ? (
                 <div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-[#6C47FF]" /></div>
+              ) : trips?.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100">
+                  <Globe className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No trips found to share</p>
+                </div>
               ) : trips?.map((trip: any) => (
                 <button 
                   key={trip.id}

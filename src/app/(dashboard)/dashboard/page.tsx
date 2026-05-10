@@ -59,20 +59,25 @@ export default function Dashboard() {
     <div className="space-y-10 pb-10">
       {/* Hero Section */}
       <div className="relative w-full h-[320px] rounded-2xl overflow-hidden shadow-md group">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1E1B4B] via-[#6C47FF] to-[#F59E0B] opacity-90 transition-opacity group-hover:opacity-100" />
-        <div className="absolute inset-0 bg-black/20" />
+        <img 
+          src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800" 
+          alt="Hero" 
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1E1B4B] via-[#6C47FF]/80 to-[#F59E0B]/60 transition-opacity group-hover:opacity-90" />
+        <div className="absolute inset-0 bg-black/10" />
         
         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white font-heading mb-8 shadow-sm">
             Where will you go next?
           </h1>
           
-          <form onSubmit={handleSearch} className="w-full max-w-2xl relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-6 h-6" />
+          <form onSubmit={handleSearch} className="w-full max-w-2xl relative group/search">
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-indigo-400 w-5 h-5 transition-colors group-focus-within/search:text-indigo-600" />
             <input 
               type="text" 
               placeholder="Search cities, activities..."
-              className="w-full pl-14 pr-6 py-4 rounded-full text-lg shadow-xl border-none focus:ring-4 focus:ring-[#F59E0B]/50 transition-shadow outline-none text-gray-800"
+              className="w-full pl-16 pr-8 py-5 rounded-2xl text-lg shadow-2xl border-none ring-1 ring-black/5 focus:ring-4 focus:ring-indigo-500/20 transition-all outline-none text-gray-900 bg-white"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

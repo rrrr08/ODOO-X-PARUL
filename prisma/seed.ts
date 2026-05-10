@@ -34,6 +34,7 @@ async function main() {
     where: { email: adminEmail },
     update: {},
     create: {
+      id: 'admin_permanent_id_001',
       email: adminEmail,
       name: 'Rushang Parul',
       password: hashedPassword,
@@ -105,6 +106,7 @@ async function main() {
   const trip = await prisma.trip.create({
     data: {
       title: 'The Great European Loop',
+      coverUrl: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a',
       description: 'A month-long journey through the most beautiful cities in Europe.',
       startDate: new Date('2026-07-01'),
       endDate: new Date('2026-07-30'),
@@ -156,7 +158,39 @@ async function main() {
     }
   })
 
-  // 5. Community Post
+  // 5. Seed a Trip for the Admin (Rushang)
+  await prisma.trip.create({
+    data: {
+      id: 'admin_trip_001',
+      title: 'Admin Global Tour',
+      coverUrl: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e',
+      description: 'Master itinerary for platform testing and demonstration.',
+      startDate: new Date('2026-10-01'),
+      endDate: new Date('2026-10-15'),
+      isPublic: true,
+      userId: admin.id,
+      stops: {
+        create: [
+          {
+            cityName: 'Tokyo',
+            country: 'Japan',
+            startDate: new Date('2026-10-01'),
+            endDate: new Date('2026-10-07'),
+            order: 1
+          },
+          {
+            cityName: 'Kyoto',
+            country: 'Japan',
+            startDate: new Date('2026-10-08'),
+            endDate: new Date('2026-10-15'),
+            order: 2
+          }
+        ]
+      }
+    }
+  })
+
+  // 6. Community Post
   await prisma.communityPost.create({
     data: {
       title: 'How I spent $2000 in Paris',

@@ -118,7 +118,7 @@ model Trip {
   isTemplate   Boolean  @default(false)
   totalBudget  Float?
   userId       String
-  user         User     @relation(fields: [userId], references: [id])
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   stops        Stop[]
   notes        TripNote[]
   expenses     Expense[]
@@ -183,7 +183,7 @@ model TripNote {
   tripId    String
   userId    String
   trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
 
@@ -203,7 +203,7 @@ model CommunityPost {
   tripId    String?
   trip      Trip?    @relation(fields: [tripId], references: [id])
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   likesCount Int      @default(0)
   likes      Like[]
   comments   Comment[]

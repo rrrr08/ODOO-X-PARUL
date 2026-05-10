@@ -11,12 +11,12 @@ export function Sidebar() {
   return (
     <aside className="w-60 h-screen fixed left-0 top-0 bg-white border-r border-gray-200 flex flex-col justify-between hidden md:flex no-print">
       <div className="p-6">
-        <div className="flex items-center gap-2 mb-8 text-[#6C47FF] font-bold text-xl font-heading">
+        <Link href="/dashboard" className="flex items-center gap-2 mb-8 text-[#6C47FF] font-bold text-xl font-heading hover:opacity-80 transition-opacity">
           <Plane className="w-6 h-6" />
           <span>Traveloop</span>
-        </div>
+        </Link>
         <nav className="space-y-2">
-          <Link href="/dashboard" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+          <Link href="/" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
             <Home className="w-5 h-5" />
             <span>Home</span>
           </Link>

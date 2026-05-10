@@ -16,6 +16,7 @@ export function AddToTripModal({ isOpen, onClose, city, activity }: any) {
     queryKey: ['trips-mini'],
     queryFn: async () => {
       const res = await axios.get('/api/trips?limit=10')
+      console.log("[ADD_TO_TRIP_MODAL] Fetched trips:", res.data)
       return res.data
     },
     enabled: isOpen
@@ -89,7 +90,7 @@ export function AddToTripModal({ isOpen, onClose, city, activity }: any) {
               className="w-full border-gray-200 rounded-xl shadow-sm focus:border-[#6C47FF] focus:ring-[#6C47FF] p-3 border transition-all"
             >
               <option value="">Choose a trip...</option>
-              {trips?.map((trip: any) => (
+              {Array.isArray(trips) && trips.map((trip: any) => (
                 <option key={trip.id} value={trip.id}>{trip.title}</option>
               ))}
             </select>

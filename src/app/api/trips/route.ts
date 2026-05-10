@@ -29,7 +29,7 @@ export async function GET(req: Request) {
       }
     })
 
-    console.log(`[API_TRIPS] Fetched ${trips.length} trips for user ${session.user.id}. includeTemplates=${includeTemplates}`)
+    console.log(`[API_TRIPS] SUCCESS: Fetched ${trips.length} trips. Data sample:`, JSON.stringify(trips.map(t => ({ id: t.id, title: t.title })), null, 2))
 
     return Response.json(trips)
   } catch (error: any) {

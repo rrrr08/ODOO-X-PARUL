@@ -44,25 +44,25 @@ export default function CitiesSearch() {
       ) : (
         <div className="space-y-4 mt-6">
           {cities?.map((city: any) => (
-            <div key={city.id} className="flex items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
-              <div className="w-[72px] h-[72px] rounded-lg overflow-hidden shrink-0 bg-gradient-to-tr from-indigo-200 to-purple-200">
-                {city.imageUrl && <img src={city.imageUrl} alt={city.name} className="w-full h-full object-cover" />}
+            <div key={city.id} className="flex items-center bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:border-indigo-100 hover:shadow-md transition-all group">
+              <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-gradient-to-tr from-indigo-200 to-purple-200 shadow-inner">
+                {city.imageUrl && <img src={city.imageUrl} alt={city.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />}
               </div>
-              <div className="ml-4 flex-1">
-                <h3 className="font-bold text-lg text-[#1E1B4B]">{city.name}</h3>
-                <p className="text-sm text-gray-500">{city.country}</p>
-                <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
-                  <span className="font-medium text-[#F59E0B] tracking-widest">{Array.from({length: city.costIndex}).map(()=>'$').join('')}</span>
+              <div className="ml-5 flex-1">
+                <h3 className="font-bold text-xl text-[#1E1B4B] group-hover:text-[#6C47FF] transition-colors">{city.name}</h3>
+                <p className="text-sm text-gray-500 font-medium">{city.country}</p>
+                <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                  <span className="font-black text-[#F59E0B] tracking-widest">{Array.from({length: city.costIndex}).map(()=>'$').join('')}</span>
                   <div className="flex items-center gap-0.5">
                     {Array.from({length: 5}).map((_, i) => (
-                      <Star key={i} className={`w-3 h-3 ${i < city.popularity / 20 ? 'fill-[#F59E0B] text-[#F59E0B]' : 'fill-gray-200 text-gray-200'}`} />
+                      <Star key={i} className={`w-3.5 h-3.5 ${i < city.popularity / 20 ? 'fill-[#F59E0B] text-[#F59E0B]' : 'fill-gray-100 text-gray-100'}`} />
                     ))}
                   </div>
                 </div>
               </div>
               <button 
                 onClick={() => handleAddClick(city)}
-                className="md:opacity-0 md:group-hover:opacity-100 flex items-center gap-2 px-4 py-2 rounded-lg border border-[#6C47FF] text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white transition-all text-sm font-medium"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-[#6C47FF]/10 text-[#6C47FF] font-bold hover:bg-[#6C47FF] hover:text-white hover:border-[#6C47FF] transition-all text-sm"
               >
                 <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add to Trip</span>
               </button>

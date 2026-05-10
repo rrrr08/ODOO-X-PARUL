@@ -3,7 +3,7 @@
 import { format } from "date-fns"
 import { getTripStatus } from "@/lib/utils"
 import Link from "next/link"
-import { MoreVertical, Globe, Lock } from "lucide-react"
+import { MoreVertical, Globe, Lock, Calendar } from "lucide-react"
 import { useState } from "react"
 import axios from "axios"
 import { toast } from "sonner"
@@ -55,66 +55,74 @@ export function TripCard({ trip, isOngoing = false, isSmall = false, variant = '
         ${isOngoing ? 'border-[#6C47FF] ring-1 ring-[#6C47FF]/20 shadow-indigo-100' : 'border-gray-100'} 
         ${isSmall ? 'scale-95' : 'w-full'}`}
     >
-      <div className={`flex ${isSmall ? 'flex-col' : 'flex-row items-center'} gap-5 p-5`}>
-        <div className={`${isSmall ? 'w-full h-32' : 'w-24 h-24'} rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 overflow-hidden shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-500`}>
+      <div className={`flex ${isSmall ? 'flex-col' : 'flex-row'} gap-6 p-6`}>
+        {/* Image Section */}
+        <div className={`${isSmall ? 'w-full h-40' : 'w-44 h-32'} rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 overflow-hidden shrink-0 shadow-sm transition-transform duration-500 group-hover:scale-[1.02]`}>
           {trip.coverUrl ? (
-            <img src={trip.coverUrl} alt={trip.title} className="w-full h-full object-cover" />
+            <img 
+              src={trip.coverUrl} 
+              alt={trip.title} 
+              className="w-full h-full object-cover" 
+            />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/50">
-              <Globe className="w-8 h-8" />
+            <div className="w-full h-full flex items-center justify-center text-white/30">
+              <Globe className="w-10 h-10" />
             </div>
           )}
         </div>
         
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3">
-            <h3 className={`font-bold text-[#1E1B4B] font-heading truncate ${isSmall ? 'text-lg' : 'text-xl'}`}>{trip.title}</h3>
-            {isOngoing && <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />}
-            {isPublic ? <Globe className="w-4 h-4 text-[#6C47FF]" /> : <Lock className="w-4 h-4 text-gray-300" />}
+        {/* Content Section */}
+        <div className="flex-1 flex flex-col justify-between min-w-0 py-1">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h3 className={`font-black text-[#1E1B4B] tracking-tight truncate ${isSmall ? 'text-xl' : 'text-2xl'}`}>
+                {trip.title}
+              </h3>
+              {isOngoing && <span className="w-2 h-2 rounded-full bg-green-500 shadow-sm shadow-green-200 animate-pulse" />}
+            </div>
+            
+            <div className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase tracking-widest">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>
+                {format(new Date(trip.startDate), 'MMM d')} – {format(new Date(trip.endDate), 'MMM d, yyyy')}
+              </span>
+            </div>
           </div>
-          <p className="text-sm text-gray-500 mt-1 font-medium">
-            {format(new Date(trip.startDate), 'MMM d')} – {format(new Date(trip.endDate), 'MMM d, yyyy')}
-          </p>
-          
+
           {!isSmall && (
-            <div className="flex items-center gap-5 mt-4">
-              <div className="bg-indigo-50 text-[#6C47FF] px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">
+            <div className="flex items-center gap-3 mt-4">
+              <div className="bg-indigo-50 text-[#6C47FF] px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
                 {stopCount} cities
               </div>
               {trip.totalBudget && (
-                <div className="flex-1 max-w-[200px] space-y-1.5">
-                  <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase">
-                    <span>Budget Used</span>
-                    <span>{Math.round((spent / trip.totalBudget) * 100)}%</span>
-                  </div>
-                  <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all duration-1000 ease-out ${spent > trip.totalBudget ? 'bg-red-500' : 'bg-gradient-to-r from-[#6C47FF] to-[#F59E0B]'}`} 
-                      style={{ width: `${Math.min((spent / trip.totalBudget) * 100, 100)}%` }} 
-                    />
-                  </div>
+                <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-1000 ${spent > trip.totalBudget ? 'bg-red-500' : 'bg-indigo-500'}`} 
+                    style={{ width: `${Math.min((spent / trip.totalBudget) * 100, 100)}%` }} 
+                  />
                 </div>
               )}
             </div>
           )}
         </div>
 
+        {/* Actions Section */}
         {!isSmall && (
-          <div className="flex items-center gap-4 ml-auto pl-4">
+          <div className="flex flex-col justify-between items-end gap-2 shrink-0">
             <button 
               onClick={handleTogglePublic}
               disabled={isToggling}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
                 isPublic 
-                  ? 'bg-indigo-50 text-[#6C47FF] border-indigo-100 hover:bg-indigo-100 shadow-sm' 
-                  : 'bg-white text-gray-400 border-gray-100 hover:text-gray-600 hover:border-gray-200'
+                  ? 'bg-indigo-50 text-[#6C47FF] border-indigo-100' 
+                  : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'
               }`}
             >
-              {isPublic ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-              {isPublic ? "Shared" : "Keep Private"}
+              {isPublic ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+              {isPublic ? "Public" : "Private"}
             </button>
 
-            <button className="p-2.5 text-gray-400 hover:text-[#6C47FF] hover:bg-indigo-50 rounded-xl transition-colors">
+            <button className="p-2 text-gray-300 hover:text-gray-600 transition-colors">
               <MoreVertical className="w-5 h-5" />
             </button>
           </div>

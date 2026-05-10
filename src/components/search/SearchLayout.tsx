@@ -40,7 +40,7 @@ export function SearchLayout({ children, placeholder = "Search cities and activi
             placeholder={placeholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full pl-14 pr-6 py-4 rounded-xl text-lg shadow-lg border-none focus:ring-4 focus:ring-[#F59E0B]/50 transition-shadow outline-none text-gray-800"
+            className="w-full pl-14 pr-6 py-5 rounded-2xl text-lg bg-white text-gray-900 placeholder:text-gray-400 shadow-2xl border-none focus:ring-4 focus:ring-[#6C47FF]/20 transition-all outline-none"
           />
         </form>
       </div>
