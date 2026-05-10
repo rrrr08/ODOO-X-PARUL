@@ -13,6 +13,8 @@ export default function CitiesSearch() {
   const q = searchParams.get('q') || ''
   const [selectedCity, setSelectedCity] = useState<any>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [maxCost, setMaxCost] = useState(5)
+  const [region, setRegion] = useState<string | null>(null)
 
   const handleAddClick = (city: any) => {
     setSelectedCity(city)
@@ -20,15 +22,57 @@ export default function CitiesSearch() {
   }
 
   const { data: cities, isLoading } = useQuery({
-    queryKey: ['cities', q],
+    queryKey: ['cities', q, maxCost, region],
     queryFn: async () => {
-      const res = await axios.get(`/api/search/cities?q=${q}`)
+      const res = await axios.get(`/api/search/cities?q=${q}&maxCost=${maxCost}${region ? `&region=${region}` : ''}`)
       return res.data
     }
   })
 
   return (
     <SearchLayout placeholder="Search cities...">
+      <div className="flex flex-col md:flex-row gap-8 mt-6">
+        {/* Sidebar Filters */}
+        <div className="md:w-64 shrink-0 space-y-8">
+          <div>
+            <h3 className="font-black text-xs text-[#1E1B4B] mb-4 uppercase tracking-widest">Budget Level</h3>
+            <div className="grid grid-cols-5 gap-2">
+              {[1, 2, 3, 4, 5].map((level) => (
+                <button
+                  key={level}
+                  onClick={() => setMaxCost(level)}
+                  className={`h-10 rounded-xl flex items-center justify-center transition-all border-2 ${
+                    maxCost === level 
+                      ? 'bg-[#F59E0B] border-[#F59E0B] text-white shadow-lg shadow-amber-100 scale-105' 
+                      : 'bg-white text-gray-400 border-gray-100 hover:border-amber-200'
+                  }`}
+                >
+                  <span className={`font-black tracking-tighter ${level > 3 ? 'text-[10px]' : 'text-sm'}`}>
+                    {'$'.repeat(level)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-black text-xs text-[#1E1B4B] mb-4 uppercase tracking-widest">Region</h3>
+            <select 
+              className="w-full bg-white border border-gray-100 rounded-xl p-3 text-sm font-bold text-[#1E1B4B] outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all"
+              onChange={(e) => setRegion(e.target.value || null)}
+            >
+              <option value="">All Regions</option>
+              <option value="Europe">Europe</option>
+              <option value="Asia">Asia</option>
+              <option value="North America">North America</option>
+              <option value="South America">South America</option>
+              <option value="Africa">Africa</option>
+              <option value="Oceania">Oceania</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex-1">
       {isLoading ? (
         <div className="space-y-4 mt-6">
           {[1, 2, 3].map((i) => (
@@ -73,6 +117,9 @@ export default function CitiesSearch() {
           )}
         </div>
       )}
+
+        </div>
+      </div>
 
       <AddToTripModal 
         isOpen={isModalOpen} 

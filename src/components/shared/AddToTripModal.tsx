@@ -16,7 +16,6 @@ export function AddToTripModal({ isOpen, onClose, city, activity }: any) {
     queryKey: ['trips-mini'],
     queryFn: async () => {
       const res = await axios.get('/api/trips?limit=10')
-      console.log("[ADD_TO_TRIP_MODAL] Fetched trips:", res.data)
       return res.data
     },
     enabled: isOpen

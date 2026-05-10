@@ -13,12 +13,13 @@ import { SkeletonCard } from "@/components/shared/SkeletonCard"
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Clock, DollarSign, Plus, Globe, GripVertical, Trash2, FileText, Download } from "lucide-react"
+import { Clock, DollarSign, Plus, Globe, GripVertical, Trash2, FileText, Download, Camera } from "lucide-react"
 import { AddStopModal } from "@/components/trips/AddStopModal"
 import { AddActivityModal } from "@/components/trips/AddActivityModal"
 import { BudgetDashboard } from "@/components/trips/BudgetDashboard"
 import { NotesDashboard } from "@/components/trips/NotesDashboard"
 import { ChecklistDashboard } from "@/components/trips/ChecklistDashboard"
+import { CalendarView } from "@/components/trips/CalendarView"
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
 export default function ItineraryBuilder() {
@@ -29,6 +30,7 @@ export default function ItineraryBuilder() {
   const [activeTab, setActiveTab] = useState("Itinerary Builder")
   const [isStopModalOpen, setIsStopModalOpen] = useState(false)
   const [activeStopId, setActiveStopId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list")
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ['trip', params.id],
@@ -86,10 +88,29 @@ export default function ItineraryBuilder() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = async (event: any) => {
     const { active, over } = event
-    if (active.id !== over.id) {
-      // Reorder logic (needs server mutation)
+    if (!over || active.id === over.id) return
+
+    const oldIndex = trip.stops.findIndex((s: any) => s.id === active.id)
+    const newIndex = trip.stops.findIndex((s: any) => s.id === over.id)
+    
+    const newStops = arrayMove(trip.stops, oldIndex, newIndex)
+    
+    // Update local cache optimistically
+    queryClient.setQueryData(['trip', params.id], {
+      ...trip,
+      stops: newStops
+    })
+
+    try {
+      await axios.patch('/api/stops/reorder', {
+        stops: newStops.map((s, index) => ({ id: s.id, order: index }))
+      })
+      toast.success("Itinerary reordered")
+    } catch (error) {
+      toast.error("Failed to save order")
+      queryClient.invalidateQueries({ queryKey: ['trip', params.id] })
     }
   }
 
@@ -110,9 +131,11 @@ export default function ItineraryBuilder() {
     )
   }
 
+
+
   return (
     <div className="space-y-6">
-      {/* Top Section */}
+      {/* ... header remains same ... */}
       <div className="relative w-full h-48 rounded-xl overflow-hidden shadow-sm">
         <div className="absolute inset-0 bg-gradient-to-tr from-[#1E1B4B] to-[#6C47FF]">
           {trip?.coverUrl && <img src={trip.coverUrl} className="w-full h-full object-cover opacity-60" alt="" />}
@@ -125,6 +148,43 @@ export default function ItineraryBuilder() {
             onChange={(e) => !isReadOnly && debouncedSave('title', e.target.value)}
             className={`bg-transparent text-3xl font-bold font-heading border-none focus:ring-0 px-0 placeholder-white/70 min-w-[300px] ${isReadOnly ? 'cursor-default' : 'cursor-text'}`}
           />
+        </div>
+        <div className="absolute top-4 left-6">
+          <input 
+            type="file" 
+            id="cover-upload" 
+            className="hidden" 
+            accept="image/*"
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (file && !isReadOnly) {
+                const reader = new FileReader()
+                reader.onloadend = async () => {
+                  setSaveStatus("saving")
+                  try {
+                    await axios.put(`/api/trips/${params.id}`, { coverUrl: reader.result })
+                    queryClient.invalidateQueries({ queryKey: ['trip', params.id] })
+                    setSaveStatus("saved")
+                  } catch (error) {
+                    toast.error("Failed to update cover")
+                    setSaveStatus("idle")
+                  } finally {
+                    setTimeout(() => setSaveStatus("idle"), 2000)
+                  }
+                }
+                reader.readAsDataURL(file)
+              }
+            }}
+          />
+          {!isReadOnly && (
+            <button 
+              onClick={() => document.getElementById('cover-upload')?.click()}
+              className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-all shadow-lg border border-white/30"
+              title="Change Cover Photo"
+            >
+              <Camera className="w-5 h-5" />
+            </button>
+          )}
         </div>
         <div className="absolute top-4 right-6 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white text-sm">
           {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Saved ✓" : ""}
@@ -182,56 +242,79 @@ export default function ItineraryBuilder() {
         )}
 
         {activeTab === "View Itinerary" && (
-          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {getDays().map((day, i) => (
-              <div key={i} className="relative pl-12 border-l-2 border-[#6C47FF]/20 last:border-l-0 pb-10">
-                <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-[#6C47FF] shadow-[0_0_0_4px_rgba(108,71,255,0.1)]" />
-                <div className="mb-6">
-                  <h3 className="text-sm font-black text-[#6C47FF] uppercase tracking-[0.2em] mb-1">Day {i + 1}</h3>
-                  <p className="text-2xl font-black text-[#1E1B4B] font-heading">{format(day.date, 'EEEE, MMM d')}</p>
-                </div>
-                
-                <div className="grid gap-4">
-                  {day.activities.length === 0 ? (
-                    <div className="p-6 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 text-center">
-                      <p className="text-sm text-gray-400 font-medium">No activities scheduled for this day.</p>
-                      {!isReadOnly && (
-                        <button onClick={() => setActiveTab("Itinerary Builder")} className="text-xs font-bold text-[#6C47FF] mt-2 underline">Add some activities</button>
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-end">
+              <div className="bg-gray-100 p-1 rounded-xl flex gap-1">
+                <button 
+                  onClick={() => setViewMode("list")}
+                  className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  Timeline
+                </button>
+                <button 
+                  onClick={() => setViewMode("calendar")}
+                  className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'calendar' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  Calendar
+                </button>
+              </div>
+            </div>
+
+            {viewMode === "calendar" ? (
+              <CalendarView trip={trip} />
+            ) : (
+              <div className="space-y-10">
+                {getDays().map((day, i) => (
+                  <div key={i} className="relative pl-12 border-l-2 border-[#6C47FF]/20 last:border-l-0 pb-10">
+                    <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-[#6C47FF] shadow-[0_0_0_4px_rgba(108,71,255,0.1)]" />
+                    <div className="mb-6">
+                      <h3 className="text-sm font-black text-[#6C47FF] uppercase tracking-[0.2em] mb-1">Day {i + 1}</h3>
+                      <p className="text-2xl font-black text-[#1E1B4B] font-heading">{format(day.date, 'EEEE, MMM d')}</p>
+                    </div>
+                    
+                    <div className="grid gap-4">
+                      {day.activities.length === 0 ? (
+                        <div className="p-6 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 text-center">
+                          <p className="text-sm text-gray-400 font-medium">No activities scheduled for this day.</p>
+                          {!isReadOnly && (
+                            <button onClick={() => setActiveTab("Itinerary Builder")} className="text-xs font-bold text-[#6C47FF] mt-2 underline">Add some activities</button>
+                          )}
+                        </div>
+                      ) : (
+                        day.activities.map((act: any) => (
+                          <div key={act.id} className="flex items-center gap-6 bg-white p-5 rounded-2xl shadow-sm border border-gray-50 hover:shadow-md transition-shadow group">
+                            <div className="w-16 h-16 rounded-xl bg-gradient-to-tr from-indigo-50 to-white flex flex-col items-center justify-center text-[#1E1B4B] border border-indigo-100 shrink-0">
+                              <Clock className="w-4 h-4 mb-1 text-[#6C47FF]" />
+                              <span className="text-[10px] font-bold">12:00</span>
+                            </div>
+                            
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-[10px] font-bold text-[#6C47FF] uppercase tracking-wider">{act.category}</span>
+                                {act.intensity && (
+                                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                                    act.intensity === 'High' ? 'bg-red-50 text-red-600' :
+                                    act.intensity === 'Medium' ? 'bg-amber-50 text-amber-600' :
+                                    'bg-green-50 text-green-600'
+                                  }`}>
+                                    {act.intensity} Intensity
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className="font-bold text-gray-900">{act.name}</h4>
+                            </div>
+
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-gray-900">${act.cost}</p>
+                            </div>
+                          </div>
+                        ))
                       )}
                     </div>
-                  ) : (
-                    day.activities.map((act: any) => (
-                      <div key={act.id} className="flex items-center gap-6 bg-white p-5 rounded-2xl shadow-sm border border-gray-50 hover:shadow-md transition-shadow group">
-                        <div className="w-16 h-16 rounded-xl bg-gradient-to-tr from-indigo-50 to-white flex flex-col items-center justify-center text-[#1E1B4B] border border-indigo-100 shrink-0">
-                          <Clock className="w-4 h-4 mb-1 text-[#6C47FF]" />
-                          <span className="text-[10px] font-bold">12:00</span>
-                        </div>
-                        
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-[10px] font-bold text-[#6C47FF] uppercase tracking-wider">{act.category}</span>
-                            {act.intensity && (
-                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                                act.intensity === 'High' ? 'bg-red-50 text-red-600' :
-                                act.intensity === 'Medium' ? 'bg-amber-50 text-amber-600' :
-                                'bg-green-50 text-green-600'
-                              }`}>
-                                {act.intensity} Intensity
-                              </span>
-                            )}
-                          </div>
-                          <h4 className="font-bold text-gray-900">{act.name}</h4>
-                        </div>
-
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-gray-900">${act.cost}</p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
 
             {/* Flexible Schedule */}
             {trip?.stops?.some((s: any) => s.activities?.some((a: any) => !a.scheduledAt)) && (

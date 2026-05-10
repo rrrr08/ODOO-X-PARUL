@@ -49,6 +49,15 @@ export function ChecklistDashboard({ tripId }: { tripId: string }) {
     onError: () => toast.error("Failed to delete item")
   })
 
+  const resetMutation = useMutation({
+    mutationFn: () => axios.delete(`/api/trips/${tripId}/checklist/reset`),
+    onSuccess: () => {
+      toast.success("Checklist reset")
+      queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
+    },
+    onError: () => toast.error("Failed to reset checklist")
+  })
+
   if (isLoading) return <SkeletonCard height="h-[400px]" lines={6} />
 
   const items = trip?.checklist || []
@@ -76,9 +85,21 @@ export function ChecklistDashboard({ tripId }: { tripId: string }) {
       <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-8 rounded-3xl border border-gray-100 shadow-sm gap-8">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-black text-[#1E1B4B] font-heading flex items-center gap-3 uppercase tracking-wider">
-              <Briefcase className="w-6 h-6 text-[#F59E0B]" /> Packing Progress
-            </h2>
+            <div className="flex items-center gap-4">
+              <h2 className="text-2xl font-black text-[#1E1B4B] font-heading flex items-center gap-3 uppercase tracking-wider">
+                <Briefcase className="w-6 h-6 text-[#F59E0B]" /> Packing Progress
+              </h2>
+              <button 
+                onClick={() => {
+                  if (window.confirm("Reset all items to unpacked?")) resetMutation.mutate()
+                }}
+                disabled={resetMutation.isPending || totalCount === 0}
+                className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-[#6C47FF] transition-colors flex items-center gap-1.5"
+              >
+                {resetMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <div className="w-1.5 h-1.5 rounded-full bg-gray-200" />}
+                Reset All
+              </button>
+            </div>
             <span className="text-sm font-black text-[#6C47FF] bg-indigo-50 px-3 py-1 rounded-full">{progress}% Ready</span>
           </div>
           <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden shadow-inner">

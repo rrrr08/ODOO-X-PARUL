@@ -68,6 +68,24 @@ export default function ExpenseInvoice() {
     toast.success(isPaid ? "Status set to Pending" : "Invoice marked as Paid!")
   }
 
+  // Calculate Daily Budget Alerts
+  const startDate = new Date(trip?.startDate || new Date())
+  const endDate = new Date(trip?.endDate || new Date())
+  const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
+  const tripDuration = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1
+  const averageDailyBudget = budget / tripDuration
+
+  // Group expenses by day
+  const dailySpending: Record<string, number> = {}
+  allExpenses.forEach((exp: any) => {
+    const dateKey = exp.date ? format(new Date(exp.date), 'yyyy-MM-dd') : 'unknown'
+    dailySpending[dateKey] = (dailySpending[dateKey] || 0) + exp.amount
+  })
+
+  const overBudgetDays = Object.entries(dailySpending).filter(([date, amount]) => 
+    date !== 'unknown' && amount > averageDailyBudget && averageDailyBudget > 0
+  )
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -197,6 +215,24 @@ export default function ExpenseInvoice() {
               <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-medium flex items-center justify-between">
                 <span>Over budget warning</span>
                 <span className="font-bold">${(grandTotal - budget).toFixed(2)}</span>
+              </div>
+            )}
+
+            {overBudgetDays.length > 0 && (
+              <div className="mb-6 bg-red-50 p-4 rounded-xl border border-red-100 animate-pulse">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-red-600 mb-1">Daily Budget Alert</h4>
+                    <p className="text-[10px] text-red-500 font-bold">
+                      You exceeded your ${Math.round(averageDailyBudget)}/day limit on {overBudgetDays.length} day(s).
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 

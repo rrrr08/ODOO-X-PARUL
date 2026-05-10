@@ -189,6 +189,16 @@ export default function Profile() {
             </div>
 
             <div>
+              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Language Preference</label>
+              <select className="w-full border-gray-100 bg-gray-50 rounded-xl shadow-sm focus:border-[#6C47FF] focus:ring-[#6C47FF] focus:bg-white p-3 border font-bold transition-all outline-none">
+                <option value="en">English (US)</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+              </select>
+            </div>
+
+            <div>
               <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Bio</label>
               <textarea 
                 {...register("bio")} 

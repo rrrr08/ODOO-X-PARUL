@@ -11,7 +11,10 @@ import { TripCard } from "@/components/trips/TripCard"
 import { SkeletonCard } from "@/components/shared/SkeletonCard"
 import { EmptyState } from "@/components/shared/EmptyState"
 
+import { useSession } from "next-auth/react"
+
 export default function Dashboard() {
+  const { data: session } = useSession()
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -38,6 +41,14 @@ export default function Dashboard() {
     }
   }
 
+  // Calculate Budget Highlights
+  const totalBudgetAcrossTrips = recentTrips?.reduce((acc: number, t: any) => acc + (t.totalBudget || 0), 0) || 0
+  const totalSpentAcrossTrips = recentTrips?.reduce((acc: number, t: any) => {
+    const manualExpenses = t.expenses?.reduce((sum: number, e: any) => sum + e.amount, 0) || 0
+    const activityExpenses = t.stops?.flatMap((s: any) => s.activities || []).reduce((sum: number, a: any) => sum + (a.cost || 0), 0) || 0
+    return acc + manualExpenses + activityExpenses
+  }, 0) || 0
+
   const comparisonNow = new Date()
   const ongoing = recentTrips?.filter((t: any) => {
     const s = new Date(t.startDate); s.setHours(0,0,0,0)
@@ -57,27 +68,49 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-10 pb-10">
-      {/* Hero Section */}
-      <div className="relative w-full h-[320px] rounded-2xl overflow-hidden shadow-md group">
-        <img 
-          src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800" 
-          alt="Hero" 
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1E1B4B] via-[#6C47FF]/80 to-[#F59E0B]/60 transition-opacity group-hover:opacity-90" />
-        <div className="absolute inset-0 bg-black/10" />
+      {/* Welcome & Search Section */}
+      <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl group border border-indigo-100/20">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1E1B4B] via-[#6C47FF] to-[#F59E0B] opacity-95" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
         
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white font-heading mb-8 shadow-sm">
-            Where will you go next?
-          </h1>
+        <div className="relative z-10 p-8 md:p-12">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+            <div className="space-y-2">
+              <p className="text-indigo-200 font-black text-xs uppercase tracking-[0.3em]">Welcome Back, Explorer</p>
+              <h1 className="text-4xl md:text-5xl font-black text-white font-heading tracking-tight">
+                Hello, {session?.user?.name?.split(' ')[0] || 'Traveler'}!
+              </h1>
+              <p className="text-white/70 text-lg font-medium">Ready for your next adventure?</p>
+            </div>
+
+            {/* Budget Highlights Glassmorphic Card */}
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-3xl shrink-0 w-full md:w-auto min-w-[280px] shadow-xl">
+              <h4 className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-4">Investment Highlights</h4>
+              <div className="flex justify-between items-end gap-12">
+                <div>
+                  <p className="text-white/60 text-xs font-bold uppercase mb-1">Total Budget</p>
+                  <p className="text-2xl font-black text-white">${totalBudgetAcrossTrips.toLocaleString()}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-white/60 text-xs font-bold uppercase mb-1">Total Spent</p>
+                  <p className="text-2xl font-black text-[#F59E0B]">${totalSpentAcrossTrips.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="mt-4 w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-[#F59E0B] to-[#FCD34D] transition-all duration-1000" 
+                  style={{ width: `${Math.min((totalSpentAcrossTrips / (totalBudgetAcrossTrips || 1)) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
           
-          <form onSubmit={handleSearch} className="w-full max-w-2xl relative group/search">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-indigo-400 w-5 h-5 transition-colors group-focus-within/search:text-indigo-600" />
+          <form onSubmit={handleSearch} className="mt-12 w-full max-w-2xl relative group/search">
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-[#6C47FF] w-6 h-6 transition-transform group-focus-within/search:scale-110" />
             <input 
               type="text" 
-              placeholder="Search cities, activities..."
-              className="w-full pl-16 pr-8 py-5 rounded-2xl text-lg shadow-2xl border-none ring-1 ring-black/5 focus:ring-4 focus:ring-indigo-500/20 transition-all outline-none text-gray-900 bg-white"
+              placeholder="Where will you go next? Search destinations..."
+              className="w-full pl-16 pr-8 py-5 rounded-2xl text-lg shadow-2xl border-none focus:ring-8 focus:ring-[#6C47FF]/20 transition-all outline-none text-gray-800 bg-white/95 backdrop-blur-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

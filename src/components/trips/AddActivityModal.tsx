@@ -8,17 +8,20 @@ import { Search, Plus, Loader2, X, Clock, DollarSign } from "lucide-react"
 
 export function AddActivityModal({ isOpen, onClose, stopId, trip }: any) {
   const [search, setSearch] = useState("")
+  const [selectedCat, setSelectedCat] = useState<string | null>(null)
   const [scheduledAt, setScheduledAt] = useState("")
   const queryClient = useQueryClient()
 
+  const categories = ["Sightseeing", "Museum", "Food", "Shopping", "Adventure", "Other"]
+
   const { data: activities, isLoading: searching } = useQuery({
-    queryKey: ['activity-search', search],
+    queryKey: ['activity-search', search, selectedCat],
     queryFn: async () => {
-      if (!search) return []
-      const res = await axios.get(`/api/search/activities?q=${search}`)
+      if (!search && !selectedCat) return []
+      const res = await axios.get(`/api/search/activities?q=${search || ''}&category=${selectedCat || ''}`)
       return res.data
     },
-    enabled: search.length > 1
+    enabled: search.length > 1 || !!selectedCat
   })
 
   const mutation = useMutation({
@@ -48,14 +51,14 @@ export function AddActivityModal({ isOpen, onClose, stopId, trip }: any) {
   return (
     <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-md">
       <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full p-8 animate-in fade-in zoom-in-95 duration-300">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <h2 className="text-3xl font-black text-[#1E1B4B] font-heading">Add Activity</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
             <X className="w-6 h-6 text-gray-400" />
           </button>
         </div>
 
-        <div className="relative mb-8">
+        <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input 
             type="text" 
@@ -64,6 +67,21 @@ export function AddActivityModal({ isOpen, onClose, stopId, trip }: any) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+        </div>
+
+        <div className="mb-6">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Browse by Category</p>
+          <div className="flex flex-wrap gap-2">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCat(selectedCat === cat ? null : cat)}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all border ${selectedCat === cat ? 'bg-[#6C47FF] text-white border-[#6C47FF] shadow-lg shadow-indigo-100' : 'bg-white text-gray-500 border-gray-100 hover:border-indigo-100'}`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="mb-8 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
@@ -105,11 +123,29 @@ export function AddActivityModal({ isOpen, onClose, stopId, trip }: any) {
                   </div>
                 </div>
                 <button 
-                  onClick={() => mutation.mutate(act)}
-                  disabled={mutation.isPending}
-                  className="bg-[#6C47FF] text-white p-3 rounded-xl shadow-md hover:bg-[#5A35E5] transition-all active:scale-90"
+                  onClick={() => {
+                    const stop = trip?.stops?.find((s: any) => s.id === stopId);
+                    const isAdded = stop?.activities?.some((a: any) => a.name === act.name);
+                    if (isAdded) {
+                      toast.error("This activity is already in your stop!");
+                      return;
+                    }
+                    mutation.mutate(act)
+                  }}
+                  disabled={mutation.isPending || trip?.stops?.find((s: any) => s.id === stopId)?.activities?.some((a: any) => a.name === act.name)}
+                  className={`p-3 rounded-xl shadow-md transition-all active:scale-90 ${
+                    trip?.stops?.find((s: any) => s.id === stopId)?.activities?.some((a: any) => a.name === act.name)
+                      ? 'bg-green-500 text-white cursor-default'
+                      : 'bg-[#6C47FF] text-white hover:bg-[#5A35E5]'
+                  }`}
                 >
-                  <Plus className="w-5 h-5" />
+                  {trip?.stops?.find((s: any) => s.id === stopId)?.activities?.some((a: any) => a.name === act.name) ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <Plus className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             ))

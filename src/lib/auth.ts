@@ -20,9 +20,7 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        console.log("Authorize attempt for:", credentials?.email);
         if (!credentials?.email || !credentials?.password) {
-          console.log("Missing email or password");
           throw new Error("Invalid credentials")
         }
 
@@ -30,10 +28,8 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email }
         })
 
-        console.log("User found:", !!user);
 
         if (!user || !user?.password) {
-          console.log("User not found or has no password");
           throw new Error("Invalid credentials")
         }
 
@@ -42,7 +38,6 @@ export const authOptions: NextAuthOptions = {
           user.password
         )
 
-        console.log("Password correct:", isCorrectPassword);
 
         if (!isCorrectPassword) {
           throw new Error("Invalid credentials")

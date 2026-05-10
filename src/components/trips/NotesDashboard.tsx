@@ -12,6 +12,8 @@ export function NotesDashboard({ tripId }: { tripId: string }) {
   const [viewMode, setViewMode] = useState<"All" | "By Day" | "By Stop">("All")
   const [isAdding, setIsAdding] = useState(false)
   const [noteContent, setNoteContent] = useState("")
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
+  const [editedContent, setEditedContent] = useState("")
   const [selectedDay, setSelectedDay] = useState<number | "">("")
   const [selectedStopId, setSelectedStopId] = useState<string | "">("")
   const queryClient = useQueryClient()
@@ -45,6 +47,15 @@ export function NotesDashboard({ tripId }: { tripId: string }) {
     onSuccess: () => {
       toast.success("Note removed")
       queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
+    }
+  })
+
+  const updateNoteMutation = useMutation({
+    mutationFn: ({ id, content }: { id: string, content: string }) => axios.patch(`/api/notes/${id}`, { content }),
+    onSuccess: () => {
+      toast.success("Note updated")
+      queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
+      setEditingNoteId(null)
     }
   })
 
@@ -175,9 +186,45 @@ export function NotesDashboard({ tripId }: { tripId: string }) {
                   <span className="text-[10px] font-bold text-gray-400 uppercase">{formatDistanceToNow(new Date(note.createdAt))} ago</span>
                 </div>
                 
-                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed flex-1 font-medium">{note.content}</p>
+                {editingNoteId === note.id ? (
+                  <div className="flex-1 space-y-4">
+                    <textarea 
+                      value={editedContent}
+                      onChange={(e) => setEditedContent(e.target.value)}
+                      className="w-full border-gray-100 rounded-xl shadow-sm focus:border-[#6C47FF] focus:ring-[#6C47FF] p-3 border bg-gray-50 resize-none font-medium text-sm"
+                      rows={3}
+                      autoFocus
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => setEditingNoteId(null)}
+                        className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-600"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={() => updateNoteMutation.mutate({ id: note.id, content: editedContent })}
+                        disabled={updateNoteMutation.isPending || !editedContent.trim()}
+                        className="bg-[#6C47FF] text-white px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-[#5A35E5]"
+                      >
+                        {updateNoteMutation.isPending ? "Saving..." : "Save Changes"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed flex-1 font-medium">{note.content}</p>
+                )}
                 
                 <div className="mt-6 pt-6 border-t border-gray-50 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                  <button 
+                    onClick={() => {
+                      setEditingNoteId(note.id)
+                      setEditedContent(note.content)
+                    }}
+                    className="p-2 text-gray-400 hover:text-[#6C47FF] hover:bg-indigo-50 rounded-xl transition-colors"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
                   <button 
                     onClick={() => deleteNoteMutation.mutate(note.id)}
                     className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"

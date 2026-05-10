@@ -151,6 +151,42 @@ export default function CreateTrip() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Cover Photo (Optional)</label>
+              <div className="space-y-4">
+                <div className={`relative h-48 w-full rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center overflow-hidden bg-gray-50 ${watch("coverUrl") ? 'border-[#6C47FF] bg-indigo-50/10' : 'border-gray-200 hover:border-gray-300'}`}>
+                  {watch("coverUrl") ? (
+                    <>
+                      <img src={watch("coverUrl")} className="w-full h-full object-cover" alt="Preview" />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <button 
+                          type="button" 
+                          onClick={() => setValue("coverUrl", "")}
+                          className="bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg transform hover:scale-105 transition-transform"
+                        >
+                          Remove Photo
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center p-6">
+                      <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                        <MapPin className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="text-sm font-bold text-gray-600">Enter an image URL to set cover</p>
+                      <p className="text-xs text-gray-400 mt-1">Make your trip stand out with a beautiful photo</p>
+                    </div>
+                  )}
+                </div>
+                <input 
+                  type="text"
+                  {...register("coverUrl")} 
+                  className="w-full border-gray-300 rounded-lg shadow-sm focus:border-[#6C47FF] focus:ring-[#6C47FF] p-2.5 border text-sm"
+                  placeholder="Paste image URL here... (e.g. https://images.unsplash.com/...)"
+                />
+              </div>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Total Budget ($)</label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>

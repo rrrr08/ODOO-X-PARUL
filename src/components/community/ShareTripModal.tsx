@@ -15,7 +15,6 @@ export function ShareTripModal({ isOpen, onClose }: { isOpen: boolean, onClose: 
     queryKey: ['trips-for-sharing'],
     queryFn: async () => {
       const res = await axios.get('/api/trips?includeTemplates=true')
-      console.log("[SHARE_MODAL] Fetched trips:", res.data)
       return res.data
     }
   })
