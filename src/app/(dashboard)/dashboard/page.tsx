@@ -95,19 +95,21 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Previous Trips Section */}
-      <section>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-[#1E1B4B] font-heading">Your Trips</h2>
-          <Link href="/trips" className="text-[#6C47FF] font-medium hover:underline">View all</Link>
+      {/* Your Trips Sections */}
+      <section className="space-y-12">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-3xl font-bold text-[#1E1B4B] font-heading">My Itineraries</h2>
+          <Link href="/trips" className="text-[#6C47FF] font-medium hover:underline flex items-center gap-1">
+            View All Trips <Globe className="w-4 h-4" />
+          </Link>
         </div>
 
         {loadingTrips ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <SkeletonCard lines={2} />
-            <SkeletonCard lines={2} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <SkeletonCard lines={2} height="h-64" />
+            <SkeletonCard lines={2} height="h-64" />
           </div>
-        ) : recentTrips?.length === 0 ? (
+        ) : !recentTrips?.ongoing?.length && !recentTrips?.upcoming?.length && !recentTrips?.completed?.length ? (
           <EmptyState 
             icon={<Globe className="w-16 h-16 text-[#6C47FF]/40" />}
             title="Start your first trip"
@@ -115,10 +117,53 @@ export default function Dashboard() {
             action={{ label: "+ Plan a Trip", href: "/trips/new" }}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recentTrips?.map((trip: any) => (
-              <TripCard key={trip.id} trip={trip} />
-            ))}
+          <div className="space-y-12">
+            {/* Ongoing Trips */}
+            {recentTrips?.ongoing?.length > 0 && (
+              <div className="animate-in slide-in-from-left-4 duration-500">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-2 h-8 bg-[#6C47FF] rounded-full" />
+                  <h3 className="text-xl font-bold text-gray-800 uppercase tracking-wider">Ongoing Trips</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {recentTrips.ongoing.map((trip: any) => (
+                    <TripCard key={trip.id} trip={trip} isOngoing />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upcoming Trips */}
+            {recentTrips?.upcoming?.length > 0 && (
+              <div className="animate-in slide-in-from-left-4 duration-500 delay-100">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-2 h-8 bg-[#F59E0B] rounded-full" />
+                  <h3 className="text-xl font-bold text-gray-800 uppercase tracking-wider">Upcoming Trips</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {recentTrips.upcoming.map((trip: any) => (
+                    <TripCard key={trip.id} trip={trip} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Completed Trips */}
+            {recentTrips?.completed?.length > 0 && (
+              <div className="animate-in slide-in-from-left-4 duration-500 delay-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-2 h-8 bg-gray-300 rounded-full" />
+                  <h3 className="text-xl font-bold text-gray-500 uppercase tracking-wider">Previous Trips</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {recentTrips.completed.map((trip: any) => (
+                    <div key={trip.id} className="opacity-70 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
+                      <TripCard trip={trip} isSmall />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>

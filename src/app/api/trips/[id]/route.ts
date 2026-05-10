@@ -2,8 +2,9 @@ import prisma from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -11,7 +12,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     const trip = await prisma.trip.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id
       },
       include: {
@@ -39,8 +40,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -50,7 +52,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const trip = await prisma.trip.update({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id
       },
       data: body
@@ -62,8 +64,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -71,7 +74,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     await prisma.trip.delete({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id
       }
     })
@@ -82,8 +85,9 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -93,7 +97,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const trip = await prisma.trip.update({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id
       },
       data: { isPublic }

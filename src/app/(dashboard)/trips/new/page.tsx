@@ -18,6 +18,7 @@ const tripSchema = z.object({
   description: z.string().optional(),
   totalBudget: z.coerce.number().optional(),
   isPublic: z.boolean().default(false),
+  isTemplate: z.boolean().default(false),
   coverUrl: z.string().optional(),
 }).refine((data) => {
   if (data.startDate && data.endDate) {
@@ -154,15 +155,28 @@ export default function CreateTrip() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
-              <div>
-                <h4 className="font-medium text-gray-900">Make Public</h4>
-                <p className="text-sm text-gray-500">Allow others to view this trip in Community</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                <div>
+                  <h4 className="font-medium text-gray-900">Make Public</h4>
+                  <p className="text-sm text-gray-500">Allow others to view this trip in Community</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" {...register("isPublic")} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#6C47FF]/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#6C47FF]"></div>
+                </label>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" {...register("isPublic")} className="sr-only peer" />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#6C47FF]/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#6C47FF]"></div>
-              </label>
+
+              <div className="flex items-center justify-between p-4 bg-indigo-50/50 rounded-lg border border-indigo-100">
+                <div>
+                  <h4 className="font-medium text-[#6C47FF]">Save as Template</h4>
+                  <p className="text-sm text-indigo-400">Mark as a preplanned trip for your profile</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" {...register("isTemplate")} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#6C47FF]/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#6C47FF]"></div>
+                </label>
+              </div>
             </div>
 
             <button 

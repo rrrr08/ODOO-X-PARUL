@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
@@ -11,7 +11,7 @@ import { signinSchema, type SigninInput } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export default function SigninPage() {
+function SigninForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -49,6 +49,45 @@ export default function SigninPage() {
   };
 
   return (
+    <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+      <div className="space-y-4">
+        <Input
+          label="Email address"
+          type="email"
+          placeholder="john@example.com"
+          {...register("email")}
+          error={errors.email?.message}
+        />
+        <div className="space-y-1">
+          <Input
+            label="Password"
+            type="password"
+            placeholder="••••••••"
+            {...register("password")}
+            error={errors.password?.message}
+          />
+          <div className="flex justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-xs font-medium text-blue-600 hover:text-blue-500"
+            >
+              Forgot your password?
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <Button type="submit" className="w-full" isLoading={isLoading}>
+          Sign in
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export default function SigninPage() {
+  return (
     <div className="flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-md">
         <div>
@@ -56,46 +95,15 @@ export default function SigninPage() {
             Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
               Sign up
             </Link>
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="space-y-4">
-            <Input
-              label="Email address"
-              type="email"
-              placeholder="john@example.com"
-              {...register("email")}
-              error={errors.email?.message}
-            />
-            <div className="space-y-1">
-              <Input
-                label="Password"
-                type="password"
-                placeholder="••••••••"
-                {...register("password")}
-                error={errors.password?.message}
-              />
-              <div className="flex justify-end">
-                <Link
-                  href="/forgot-password"
-                  className="text-xs font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <Button type="submit" className="w-full" isLoading={isLoading}>
-              Sign in
-            </Button>
-          </div>
-        </form>
+        <Suspense fallback={<div className="text-center py-8 text-gray-500">Loading form...</div>}>
+          <SigninForm />
+        </Suspense>
       </div>
     </div>
   );

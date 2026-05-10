@@ -194,7 +194,7 @@ export default function ExpenseInvoice() {
                     <Cell fill="#6C47FF" />
                     <Cell fill={grandTotal > budget ? '#EF4444' : '#10B981'} />
                   </Pie>
-                  <Tooltip formatter={(val: number) => `$${val.toFixed(2)}`} />
+                  <Tooltip formatter={(val: any) => `$${val?.toFixed(2)}`} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -210,7 +210,7 @@ export default function ExpenseInvoice() {
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                   <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <Tooltip formatter={(val: number) => `$${val.toFixed(2)}`} />
+                  <Tooltip formatter={(val: any) => `$${val?.toFixed(2)}`} />
                   <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                     {barData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

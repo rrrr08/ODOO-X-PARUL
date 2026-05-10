@@ -14,19 +14,26 @@ export async function GET(req: Request) {
 
     const trips = await prisma.trip.findMany({
       where: {
-        userId: session.user.id
+        userId: session.user.id,
+        isTemplate: false
       },
       include: {
         stops: true,
         expenses: true
       },
       orderBy: {
-        createdAt: 'desc'
-      },
-      take: limit
+        startDate: 'asc'
+      }
     })
 
-    return Response.json(trips)
+    const now = new Date()
+    const categorized = {
+      ongoing: trips.filter(t => new Date(t.startDate) <= now && new Date(t.endDate) >= now),
+      upcoming: trips.filter(t => new Date(t.startDate) > now),
+      completed: trips.filter(t => new Date(t.endDate) < now)
+    }
+
+    return Response.json(categorized)
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 })
   }

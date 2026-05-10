@@ -2,6 +2,8 @@ import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format } from "date-fns"
 
+export type Expense = { amount: number; category: string }
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -40,13 +42,13 @@ export function calcTripDays(start: Date | string, end: Date | string): number {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 // Inclusive of start and end
 }
 
-export function calcBudgetSummary(expenses: any[]): { total: number, byCategory: Record<string, number> } {
+export function calcBudgetSummary(expenses: { amount: number, category: string }[]): { total: number, byCategory: Record<string, number> } {
   return expenses.reduce(
     (acc, expense) => {
       acc.total += expense.amount
       acc.byCategory[expense.category] = (acc.byCategory[expense.category] || 0) + expense.amount
       return acc
     },
-    { total: 0, byCategory: {} }
+    { total: 0, byCategory: {} as Record<string, number> }
   )
 }

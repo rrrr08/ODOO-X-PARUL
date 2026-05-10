@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { toast } from "sonner"
-import { Camera, AlertCircle } from "lucide-react"
+import { Camera, AlertCircle, Globe } from "lucide-react"
 
 const profileSchema = z.object({
   firstName: z.string().min(2, "First name is too short"),
@@ -118,6 +118,36 @@ export default function Profile() {
             </div>
           </form>
         </div>
+      </div>
+
+      {/* Trips Section for Profile */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Preplanned / Templates */}
+        <section>
+          <div className="flex items-center gap-2 mb-6">
+            <Globe className="w-5 h-5 text-[#6C47FF]" />
+            <h3 className="text-xl font-bold text-[#1E1B4B]">Preplanned Templates</h3>
+          </div>
+          <div className="space-y-4">
+            <div className="p-12 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+              <p className="text-sm text-gray-400">You haven&apos;t planned any trips yet. Create your first itinerary today!</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Previous Trips */}
+        <section>
+          <div className="flex items-center gap-2 mb-6">
+            <AlertCircle className="w-5 h-5 text-gray-400" />
+            <h3 className="text-xl font-bold text-[#1E1B4B]">Previous History</h3>
+          </div>
+          <div className="space-y-4">
+            {/* Logic to show completed trips would go here */}
+            <div className="p-12 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+              <p className="text-sm text-gray-400">No past trips found.</p>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   )

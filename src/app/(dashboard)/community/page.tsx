@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shared/PageHeader"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
 import { useState } from "react"
-import { Heart, MessageCircle, Share2, MapPin, Plus } from "lucide-react"
+import { Heart, MessageCircle, Share2, MapPin, Plus, Users } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { SkeletonCard } from "@/components/shared/SkeletonCard"
 import Link from "next/link"
@@ -143,14 +143,14 @@ function PostCard({ post }: { post: any }) {
     // Optimistic UI
     const newLiked = !liked
     setLiked(newLiked)
-    setLikes(prev => newLiked ? prev + 1 : prev - 1)
+    setLikes((prev: number) => newLiked ? prev + 1 : prev - 1)
 
     try {
       await axios.post('/api/community/like', { postId: post.id })
     } catch (error) {
       // Rollback
       setLiked(!newLiked)
-      setLikes(prev => !newLiked ? prev + 1 : prev - 1)
+      setLikes((prev: number) => !newLiked ? prev + 1 : prev - 1)
       toast.error("Failed to update like")
     } finally {
       setIsLiking(false)

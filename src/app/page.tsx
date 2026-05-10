@@ -104,7 +104,7 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center space-y-4 mb-20">
             <h2 className="text-4xl md:text-5xl font-black tracking-tight text-gray-900">Everything you need to <span className="text-indigo-600">Travel Smarter</span></h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">Focus on the adventure, we'll handle the logistics.</p>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">Focus on the adventure, we&apos;ll handle the logistics.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

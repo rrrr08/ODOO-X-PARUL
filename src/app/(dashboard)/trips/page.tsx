@@ -110,7 +110,7 @@ export default function TripsListing() {
           
           {filteredTrips.length === 0 && trips.length > 0 && (
             <div className="text-center py-12 text-gray-500">
-              No trips found matching "{search}"
+              No trips found matching &quot;{search}&quot;
             </div>
           )}
         </div>

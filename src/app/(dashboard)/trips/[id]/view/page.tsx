@@ -209,7 +209,7 @@ export default function ItineraryView() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(val: number) => `$${val}`} />
+                    <Tooltip formatter={(val: any) => `$${val}`} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">

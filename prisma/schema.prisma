@@ -42,10 +42,17 @@ model Session {
 model User {
   id            String    @id @default(cuid())
   name          String?
+  firstName     String?
+  lastName      String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
   password      String?
+  phone         String?
+  city          String?
+  country       String?
+  bio           String?
+  avatarUrl     String?
   role          Role      @default(USER)
   accounts      Account[]
   sessions      Session[]
@@ -54,8 +61,34 @@ model User {
   communityPosts CommunityPost[]
   likes         Like[]
   comments      Comment[]
+  passwordResetToken PasswordResetToken?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model City {
+  id          String   @id @default(cuid())
+  name        String
+  country     String
+  region      String
+  imageUrl    String?
+  description String?
+  costIndex   Int      @default(3)
+  popularity  Int      @default(0)
+  globalActivities GlobalActivity[]
+  createdAt   DateTime @default(now())
+}
+
+model GlobalActivity {
+  id          String   @id @default(cuid())
+  name        String
+  category    String
+  description String?
+  imageUrl    String?
+  averageCost Float    @default(0)
+  cityId      String?
+  city        City?    @relation(fields: [cityId], references: [id])
+  createdAt   DateTime @default(now())
 }
 
 model VerificationToken {
@@ -66,6 +99,14 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  userId  String   @unique
+  token   String   @unique
+  expires DateTime
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model Trip {
   id           String   @id @default(cuid())
   title        String
@@ -74,6 +115,7 @@ model Trip {
   startDate    DateTime
   endDate      DateTime
   isPublic     Boolean  @default(false)
+  isTemplate   Boolean  @default(false)
   totalBudget  Float?
   userId       String
   user         User     @relation(fields: [userId], references: [id])
@@ -94,6 +136,7 @@ model Stop {
   startDate  DateTime
   endDate    DateTime
   order      Int
+  budget     Float?
   tripId     String
   trip       Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
   activities Activity[]
@@ -107,6 +150,8 @@ model Activity {
   description String?
   imageUrl    String?
   cost        Float     @default(0)
+  expense     Float     @default(0)
+  intensity   String    @default("Low") // Low, Medium, High
   duration    Int?
   scheduledAt DateTime?
   stopId      String

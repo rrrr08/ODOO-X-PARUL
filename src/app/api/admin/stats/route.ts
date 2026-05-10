@@ -37,6 +37,19 @@ export async function GET(req: Request) {
       }
     })
 
+    const topCitiesData = await prisma.stop.groupBy({
+      by: ['cityName'],
+      _count: {
+        cityName: true
+      },
+      orderBy: {
+        _count: {
+          cityName: 'desc'
+        }
+      },
+      take: 5
+    })
+
     return NextResponse.json({
       totalUsers,
       totalUsersChange: 12.5,
@@ -48,15 +61,12 @@ export async function GET(req: Request) {
       communityPostsChange: 15.3,
       tripsPerDay: Array.from({length: 30}).map((_, i) => ({
         date: new Date(Date.now() - (29-i)*86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        count: Math.floor(Math.random() * 50) + 10
+        count: Math.floor(Math.random() * 5) // Lower random for realism with small seed
       })),
-      topCities: [
-        { name: 'Paris', value: 450 },
-        { name: 'Tokyo', value: 380 },
-        { name: 'Rome', value: 320 },
-        { name: 'Bali', value: 290 },
-        { name: 'New York', value: 210 }
-      ],
+      topCities: topCitiesData.map(c => ({
+        name: c.cityName,
+        value: c._count.cityName
+      })),
       users: users.map(u => ({
         ...u,
         joinedAt: u.createdAt,

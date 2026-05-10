@@ -5,10 +5,19 @@ import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { useSearchParams } from "next/navigation"
 import { Star, Plus } from "lucide-react"
+import { useState } from "react"
+import { AddToTripModal } from "@/components/shared/AddToTripModal"
 
 export default function CitiesSearch() {
   const searchParams = useSearchParams()
   const q = searchParams.get('q') || ''
+  const [selectedCity, setSelectedCity] = useState<any>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const handleAddClick = (city: any) => {
+    setSelectedCity(city)
+    setIsModalOpen(true)
+  }
 
   const { data: cities, isLoading } = useQuery({
     queryKey: ['cities', q],
@@ -46,12 +55,15 @@ export default function CitiesSearch() {
                   <span className="font-medium text-[#F59E0B] tracking-widest">{Array.from({length: city.costIndex}).map(()=>'$').join('')}</span>
                   <div className="flex items-center gap-0.5">
                     {Array.from({length: 5}).map((_, i) => (
-                      <Star key={i} className={`w-3 h-3 ${i < city.popularity ? 'fill-[#F59E0B] text-[#F59E0B]' : 'fill-gray-200 text-gray-200'}`} />
+                      <Star key={i} className={`w-3 h-3 ${i < city.popularity / 20 ? 'fill-[#F59E0B] text-[#F59E0B]' : 'fill-gray-200 text-gray-200'}`} />
                     ))}
                   </div>
                 </div>
               </div>
-              <button className="md:opacity-0 md:group-hover:opacity-100 flex items-center gap-2 px-4 py-2 rounded-lg border border-[#6C47FF] text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white transition-all text-sm font-medium">
+              <button 
+                onClick={() => handleAddClick(city)}
+                className="md:opacity-0 md:group-hover:opacity-100 flex items-center gap-2 px-4 py-2 rounded-lg border border-[#6C47FF] text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white transition-all text-sm font-medium"
+              >
                 <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Add to Trip</span>
               </button>
             </div>
@@ -61,6 +73,12 @@ export default function CitiesSearch() {
           )}
         </div>
       )}
+
+      <AddToTripModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        city={selectedCity} 
+      />
     </SearchLayout>
   )
 }

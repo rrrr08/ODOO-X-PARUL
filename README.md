@@ -1,56 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Traveloop 🌍
+**A Premium, Database-Driven Travel Planning Platform**
 
-## Getting Started
+Traveloop is a production-grade travel itinerary builder designed for seamless trip planning, community sharing, and financial tracking. Built with **Next.js 15**, **FastAPI (AI Engine)**, and **Prisma**, it delivers a highly dynamic and interactive user experience.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## ✨ Key Features
+
+### 📅 Advanced Itinerary Builder
+- **Daily Breakdown**: Automatic day-by-day activity grouping (Day 1, Day 2, etc.).
+- **Smart Filtering**: Geographic awareness ensures activities are only added to relevant city stops.
+- **DND Organization**: Drag-and-drop stop reordering for flexible planning.
+
+### 💰 Financial & Physical Tracking
+- **Budgeting per Section**: Set budgets for specific cities/stops.
+- **Actual Expense Tracking**: Log expenses against your budget in real-time.
+- **Intensity Mapping**: Categorize activities by physical effort (Low, Medium, High).
+
+### 🚀 Smart Dashboard
+- **Trip Categorization**: Automated grouping into **Ongoing**, **Upcoming**, and **Completed** trips.
+- **Shared Itineraries**: Publicly shareable trips with unique share links for the community.
+- **Admin Analytics**: Real-time stats on users, trips, and top destinations.
+
+---
+
+## 🛠 Tech Stack
+
+- **Frontend**: Next.js 15 (App Router), Tailwind CSS, Lucide Icons, Framer Motion.
+- **Backend**: Next.js API Routes & FastAPI (Microservices Ready).
+- **Database**: PostgreSQL 16 with Prisma ORM.
+- **Auth**: NextAuth.js (JWT Strategy).
+- **State Management**: TanStack Query (React Query) v5.
+
+---
+
+## 🏁 Getting Started
+
+### 1. Prerequisites
+- Node.js 20+
+- PostgreSQL 16 instance
+
+### 2. Environment Setup
+Create a `.env` file in the root:
+```env
+DATABASE_URL="postgresql://postgres:PASSWORD@localhost:5432/traveloop"
+NEXTAUTH_SECRET="your-secret"
+NEXTAUTH_URL="http://localhost:3000"
+JWT_SECRET="your-secret"
 ```
 
-
-First, run the migration to create the database tables:
-
+### 3. Installation & Database Sync
 ```bash
+# Install dependencies
+npm install
+
+# Push schema to DB
 npx prisma db push
-```
 
-Next, seed the database to create an admin user:
-
-```bash
+# Seed initial data (Cities, Activities, Test Users)
 npx prisma db seed
 ```
 
-Then, run the development server:
-
+### 4. Run Development Server
 ```bash
 npm run dev
 ```
 
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🧪 Testing & Quality
+- **Linting**: `npm run lint`
+- **Build Validation**: `npm run build`
+- **Security**: Environment variables protected via `.env`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📸 Design Alignment
+The UI is strictly aligned with the professional **Excalidraw Design System**, featuring:
+- Premium Dark/Indigo color palette.
+- Glassmorphic UI elements.
+- Responsive, mobile-first layouts.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Generated with 💜 by **Antigravity AI**

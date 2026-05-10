@@ -5,10 +5,19 @@ import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { useSearchParams } from "next/navigation"
 import { Clock, DollarSign, Plus } from "lucide-react"
+import { AddToTripModal } from "@/components/shared/AddToTripModal"
+import { useState } from "react"
 
 export default function ActivitiesSearch() {
   const searchParams = useSearchParams()
   const q = searchParams.get('q') || ''
+  const [selectedActivity, setSelectedActivity] = useState<any>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const handleAddClick = (activity: any) => {
+    setSelectedActivity(activity)
+    setIsModalOpen(true)
+  }
 
   const { data: activities, isLoading } = useQuery({
     queryKey: ['activities', q],
@@ -81,7 +90,10 @@ export default function ActivitiesSearch() {
                     {activity.cost}
                   </div>
                 </div>
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-[#6C47FF] text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white transition-colors font-medium">
+                <button 
+                  onClick={() => handleAddClick(activity)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-[#6C47FF] text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white transition-colors font-medium"
+                >
                   <Plus className="w-4 h-4" /> Add to Trip
                 </button>
               </div>
@@ -89,6 +101,12 @@ export default function ActivitiesSearch() {
           ))}
         </div>
       )}
+
+      <AddToTripModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        activity={selectedActivity} 
+      />
     </SearchLayout>
   )
 }
