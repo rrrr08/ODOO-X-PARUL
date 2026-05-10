@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getSession } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export default async function Home() {
-  const session = await getSession();
+  const session = await getServerSession(authOptions);
   const isAuthenticated = !!session;
 
   return (

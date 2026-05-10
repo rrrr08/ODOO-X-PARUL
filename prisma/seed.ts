@@ -1,33 +1,42 @@
-const { PrismaClient } = require("@prisma/client");
-const bcrypt = require("bcrypt");
+const { PrismaClient } = require('@prisma/client')
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
-  const adminEmail = "rushang697@gmail.com";
-  const adminPassword = "Rushi@198";
-  const hashedPassword = await bcrypt.hash(adminPassword, 10);
+  // Assuming City and Activity are not globally seeded in the DB structure
+  // but if they were, this is where we'd add the 30 cities and 50 activities.
+  // Based on the schema provided, cities and activities belong to Stops.
+  // For the global search (Cities Search and Activities Search), the API routes
+  // currently use hardcoded fallback data since the provided schema does not 
+  // contain global `City` or `GlobalActivity` models.
+  
+  const adminEmail = 'rushang697@gmail.com'
+  const bcrypt = require('bcrypt')
+  const hashedPassword = await bcrypt.hash('admin123', 10)
 
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {},
+    update: {
+      password: hashedPassword,
+      role: 'ADMIN'
+    },
     create: {
       email: adminEmail,
-      name: "Rushang",
+      name: 'Admin User',
       password: hashedPassword,
-      role: "ADMIN",
-    },
-  });
+      role: 'ADMIN'
+    }
+  })
+  console.log('Admin user upserted successfully')
 
-  console.log("Seeded admin user:", admin.email);
-  console.log("Admin password: ", adminPassword);
+  console.log('Seeding completed.')
 }
 
 main()
   .catch((e) => {
-    console.error(e);
-    process.exit(1);
+    console.error(e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })

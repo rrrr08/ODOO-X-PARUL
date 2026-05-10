@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { signinSchema } from "@/lib/validations";
 import { login } from "@/lib/auth";
 
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
       where: { email: validatedData.email },
     });
 
-    if (!user) {
+    if (!user || !user.password) {
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }

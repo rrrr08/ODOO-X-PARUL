@@ -5,8 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import axios from "axios";
-import { toast } from "react-hot-toast";
+import { signIn } from "next-auth/react";
+import { toast } from "sonner";
 import { signinSchema, type SigninInput } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,13 +27,22 @@ export default function SigninPage() {
   const onSubmit = async (data: SigninInput) => {
     setIsLoading(true);
     try {
-      await axios.post("/api/auth/signin", data);
-      toast.success("Logged in successfully!");
-      const from = searchParams.get("from") || "/dashboard";
-      router.push(from);
-      router.refresh();
+      const res = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+
+      if (res?.error) {
+        toast.error(res.error);
+      } else {
+        toast.success("Logged in successfully!");
+        const from = searchParams.get("from") || "/dashboard";
+        router.push(from);
+        router.refresh();
+      }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || "Invalid email or password");
+      toast.error("An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }

@@ -1,30 +1,37 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { Navbar } from "@/components/layout/navbar";
-import { Toaster } from "react-hot-toast";
+import type { Metadata } from "next"
+import { Plus_Jakarta_Sans, Inter } from "next/font/google"
+import "./globals.css"
+import { Providers } from "@/components/Providers"
 
-const inter = Inter({ subsets: ["latin"] });
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-heading",
+})
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+})
 
 export const metadata: Metadata = {
-  title: "Full-Stack Auth Boilerplate",
-  description: "A production-ready authentication boilerplate using Next.js, Prisma, and JWT.",
-};
+  title: "Traveloop - Plan Your Next Adventure",
+  description: "Travel planning web app for creating itineraries, tracking budgets, and sharing trips.",
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen bg-gray-50 text-gray-900`}>
-        <Navbar />
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <body
+        className={`${inter.variable} ${jakarta.variable} antialiased`}
+      >
+        <Providers>
           {children}
-        </main>
-        <Toaster position="top-right" />
+        </Providers>
       </body>
     </html>
-  );
+  )
 }

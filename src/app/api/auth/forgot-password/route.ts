@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { prisma } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { forgotPasswordSchema } from "@/lib/validations";
 import { sendResetPasswordEmail } from "@/lib/mail";
 
