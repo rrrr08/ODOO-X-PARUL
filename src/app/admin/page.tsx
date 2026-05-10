@@ -1,204 +1,346 @@
 'use client'
 
+import { useState, useEffect } from "react"
 import { PageHeader } from "@/components/shared/PageHeader"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
-import { Users, Map, Calendar, MessageSquare, TrendingUp, TrendingDown, Search, MoreVertical } from "lucide-react"
+import { Users, Map, Calendar, MessageSquare, TrendingUp, TrendingDown, Search, MoreVertical, Trash2, Shield, User as UserIcon, Check, X, Loader2 } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, Legend } from 'recharts'
 import { format } from "date-fns"
+import { toast } from "sonner"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
+
+type Tab = 'overview' | 'users' | 'trips' | 'community'
 
 export default function AdminDashboard() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const queryClient = useQueryClient()
+
+  const isAdmin = status === 'authenticated' && session?.user?.role === 'ADMIN'
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/signin')
+    } else if (status === 'authenticated' && session?.user?.role !== 'ADMIN') {
+      router.push('/dashboard')
+    }
+  }, [status, session, router])
+
+  const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      // Mocking the endpoint
-      return {
-        totalUsers: 1245,
-        totalUsersChange: 12.5,
-        totalTrips: 8432,
-        totalTripsChange: 8.2,
-        activeThisWeek: 320,
-        activeThisWeekChange: -2.4,
-        communityPosts: 5420,
-        communityPostsChange: 15.3,
-        tripsPerDay: Array.from({length: 30}).map((_, i) => ({
-          date: format(new Date(Date.now() - (29-i)*86400000), 'MMM dd'),
-          count: Math.floor(Math.random() * 50) + 10
-        })),
-        topCities: [
-          { name: 'Paris', value: 450 },
-          { name: 'Tokyo', value: 380 },
-          { name: 'Rome', value: 320 },
-          { name: 'Bali', value: 290 },
-          { name: 'New York', value: 210 }
-        ],
-        users: Array.from({length: 10}).map((_, i) => ({
-          id: i.toString(),
-          name: `User ${i+1}`,
-          email: `user${i+1}@example.com`,
-          joinedAt: new Date(Date.now() - Math.random()*10000000000).toISOString(),
-          tripCount: Math.floor(Math.random() * 15),
-          role: i === 0 ? 'ADMIN' : 'USER'
-        }))
-      }
+      const res = await axios.get('/api/admin/stats')
+      return res.data
+    },
+    enabled: isAdmin
+  })
+
+  const { data: posts, isLoading: isPostsLoading } = useQuery({
+    queryKey: ['admin-posts'],
+    queryFn: async () => {
+      const res = await axios.get('/api/admin/community')
+      return res.data
+    },
+    enabled: isAdmin && activeTab === 'community'
+  })
+
+  const { data: trips, isLoading: isTripsLoading } = useQuery({
+    queryKey: ['admin-trips'],
+    queryFn: async () => {
+      const res = await axios.get('/api/admin/trips')
+      return res.data
+    },
+    enabled: isAdmin && activeTab === 'trips'
+  })
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ userId, role }: { userId: string, role: string }) => {
+      await axios.patch(`/api/admin/users/${userId}`, { role })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
+      toast.success("User role updated")
     }
   })
+
+  const deletePostMutation = useMutation({
+    mutationFn: async (postId: string) => {
+      await axios.delete(`/api/admin/community?id=${postId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-posts'] })
+      toast.success("Post removed")
+    }
+  })
+
+  const deleteTripMutation = useMutation({
+    mutationFn: async (tripId: string) => {
+      await axios.delete(`/api/admin/trips?id=${tripId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] })
+      toast.success("Trip deleted")
+    }
+  })
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await axios.delete(`/api/admin/users/${userId}`)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
+      toast.success("User account deleted")
+    }
+  })
+
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-10 h-10 animate-spin text-[#6C47FF]" />
+      </div>
+    )
+  }
+
+  if (session?.user?.role !== 'ADMIN') return null
 
   const COLORS = ['#6C47FF', '#F59E0B', '#10B981', '#F43F5E', '#3B82F6']
 
   return (
-    <div className="space-y-8">
-      <PageHeader 
-        title="Admin Dashboard" 
-        subtitle="Platform Overview • As of today" 
-      />
-
-      {/* Row 1 - KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KpiCard 
-          icon={<Users className="w-8 h-8 text-[#6C47FF]" />}
-          value={stats?.totalUsers || 0}
-          label="Total Users"
-          change={stats?.totalUsersChange || 0}
+    <div className="space-y-8 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <PageHeader 
+          title="Admin Control Center" 
+          subtitle="Full platform governance and moderation" 
         />
-        <KpiCard 
-          icon={<Map className="w-8 h-8 text-[#F59E0B]" />}
-          value={stats?.totalTrips || 0}
-          label="Total Trips Created"
-          change={stats?.totalTripsChange || 0}
-        />
-        <KpiCard 
-          icon={<Calendar className="w-8 h-8 text-[#10B981]" />}
-          value={stats?.activeThisWeek || 0}
-          label="Active This Week"
-          change={stats?.activeThisWeekChange || 0}
-        />
-        <KpiCard 
-          icon={<MessageSquare className="w-8 h-8 text-[#F43F5E]" />}
-          value={stats?.communityPosts || 0}
-          label="Community Posts"
-          change={stats?.communityPostsChange || 0}
-        />
-      </div>
-
-      {/* Row 2 - Charts */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div className="lg:w-[60%] bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="font-bold text-[#1E1B4B] font-heading mb-6">Trips Created Per Day (Last 30 Days)</h3>
-          <div className="h-72 w-full min-h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats?.tripsPerDay || []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorTrips" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6C47FF" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#6C47FF" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="date" tick={{fontSize: 12, fill: '#6B7280'}} tickLine={false} axisLine={false} minTickGap={30} />
-                <YAxis tick={{fontSize: 12, fill: '#6B7280'}} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  labelStyle={{ fontWeight: 'bold', color: '#1E1B4B' }}
-                />
-                <Area type="monotone" dataKey="count" stroke="#6C47FF" strokeWidth={3} fillOpacity={1} fill="url(#colorTrips)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="lg:w-[40%] bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-          <h3 className="font-bold text-[#1E1B4B] font-heading mb-6">Top 5 Cities by Popularity</h3>
-          <div className="flex-1 w-full min-h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={stats?.topCities || []}
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {(stats?.topCities || []).map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(val: any) => [`${val} trips`, 'Popularity']} />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+        <div className="flex bg-white p-1.5 rounded-2xl border border-gray-100 shadow-sm overflow-x-auto no-scrollbar">
+          {(['overview', 'users', 'trips', 'community'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all capitalize ${
+                activeTab === tab 
+                  ? 'bg-[#6C47FF] text-white shadow-lg shadow-indigo-100 scale-105' 
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Row 4 - User Management Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h3 className="font-bold text-[#1E1B4B] font-heading text-lg">User Management</h3>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input 
-              type="text" 
-              placeholder="Search users..." 
-              className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-[#6C47FF] focus:border-[#6C47FF] outline-none"
-            />
+      {activeTab === 'overview' && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <KpiCard icon={<Users className="w-6 h-6 text-[#6C47FF]" />} value={stats?.totalUsers || 0} label="Total Users" change={stats?.totalUsersChange || 0} />
+            <KpiCard icon={<Map className="w-6 h-6 text-[#F59E0B]" />} value={stats?.totalTrips || 0} label="Total Trips" change={stats?.totalTripsChange || 0} />
+            <KpiCard icon={<Calendar className="w-6 h-6 text-[#10B981]" />} value={stats?.activeThisWeek || 0} label="Active Users" change={stats?.activeThisWeekChange || 0} />
+            <KpiCard icon={<MessageSquare className="w-6 h-6 text-[#F43F5E]" />} value={stats?.communityPosts || 0} label="Posts" change={stats?.communityPostsChange || 0} />
           </div>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-4 font-medium">User</th>
-                <th className="px-6 py-4 font-medium">Joined</th>
-                <th className="px-6 py-4 font-medium text-center">Trips</th>
-                <th className="px-6 py-4 font-medium">Role</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {stats?.users?.map((user: any) => (
-                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-200 to-purple-200 flex items-center justify-center text-[#1E1B4B] font-bold text-xs shrink-0">
-                        {user.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{user.name}</p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{format(new Date(user.joinedAt), 'MMM d, yyyy')}</td>
-                  <td className="px-6 py-4 text-sm text-center font-medium text-gray-900">{user.tripCount}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-bold rounded-md border ${user.role === 'ADMIN' ? 'bg-purple-50 text-[#6C47FF] border-purple-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="p-1.5 text-gray-400 hover:text-[#6C47FF] hover:bg-indigo-50 rounded-md transition-colors">
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </td>
+
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className="lg:w-[60%] bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+              <h3 className="font-black text-[#1E1B4B] font-heading mb-8 text-xl uppercase tracking-wider">Growth Analytics</h3>
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={stats?.tripsPerDay || []}>
+                    <defs>
+                      <linearGradient id="colorTrips" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6C47FF" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#6C47FF" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                    <XAxis dataKey="date" tick={{fontSize: 10, fill: '#9CA3AF', fontWeight: 'bold'}} axisLine={false} tickLine={false} />
+                    <YAxis tick={{fontSize: 10, fill: '#9CA3AF', fontWeight: 'bold'}} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
+                    <Area type="monotone" dataKey="count" stroke="#6C47FF" strokeWidth={4} fill="url(#colorTrips)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="lg:w-[40%] bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+              <h3 className="font-black text-[#1E1B4B] font-heading mb-8 text-xl uppercase tracking-wider">Popular Destinations</h3>
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={stats?.topCities || []} innerRadius={60} outerRadius={80} paddingAngle={8} dataKey="value">
+                      {(stats?.topCities || []).map((_: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} cornerRadius={4} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeTab === 'users' && (
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-8 border-b border-gray-100">
+            <h3 className="font-black text-[#1E1B4B] font-heading text-xl uppercase tracking-wider">User Moderation</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                  <th className="px-8 py-5">Explorer</th>
+                  <th className="px-8 py-5">Role</th>
+                  <th className="px-8 py-5 text-center">Trips</th>
+                  <th className="px-8 py-5 text-right">Moderation</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        <div className="p-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
-          <span>Showing 1 to 10 of 1245 entries</span>
-          <div className="flex gap-1">
-            <button className="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50" disabled>Prev</button>
-            <button className="px-3 py-1 bg-[#6C47FF] text-white rounded">1</button>
-            <button className="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50">2</button>
-            <button className="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50">3</button>
-            <button className="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50">Next</button>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {stats?.users?.map((user: any) => (
+                  <tr key={user.id} className="hover:bg-gray-50/30 transition-colors">
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center font-black text-[#6C47FF] text-xl shadow-sm border border-indigo-100">
+                          {user.name?.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-black text-gray-900 text-lg leading-tight">{user.name}</p>
+                          <p className="text-xs font-bold text-gray-400 mt-1">{user.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <select 
+                        value={user.role}
+                        onChange={(e) => updateRoleMutation.mutate({ userId: user.id, role: e.target.value })}
+                        className={`text-xs font-black px-3 py-1.5 rounded-lg border-2 outline-none transition-all ${
+                          user.role === 'ADMIN' ? 'bg-indigo-50 border-indigo-100 text-[#6C47FF]' : 'bg-gray-50 border-gray-100 text-gray-600'
+                        }`}
+                      >
+                        <option value="USER">USER</option>
+                        <option value="ADMIN">ADMIN</option>
+                      </select>
+                    </td>
+                    <td className="px-8 py-6 text-center">
+                      <span className="text-sm font-black text-gray-900 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
+                        {user.tripCount} trips
+                      </span>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      <button 
+                        onClick={() => { if(confirm('Permanently delete this user and all their data?')) deleteUserMutation.mutate(user.id) }}
+                        className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === 'trips' && (
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-8 border-b border-gray-100">
+            <h3 className="font-black text-[#1E1B4B] font-heading text-xl uppercase tracking-wider">Global Trip Index</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                  <th className="px-8 py-5">Trip Itinerary</th>
+                  <th className="px-8 py-5">Author</th>
+                  <th className="px-8 py-5 text-center">Stops</th>
+                  <th className="px-8 py-5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {trips?.map((trip: any) => (
+                  <tr key={trip.id} className="hover:bg-gray-50/30 transition-colors">
+                    <td className="px-8 py-6">
+                      <p className="font-black text-gray-900 text-lg leading-tight truncate max-w-xs">{trip.title}</p>
+                      <p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-tighter">
+                        {trip.isPublic ? '🌐 Public' : '🔒 Private'} {trip.isTemplate ? '• 📝 Template' : ''}
+                      </p>
+                    </td>
+                    <td className="px-8 py-6">
+                      <p className="font-bold text-gray-900">{trip.user.name}</p>
+                      <p className="text-[10px] text-gray-400">{trip.user.email}</p>
+                    </td>
+                    <td className="px-8 py-6 text-center">
+                      <span className="text-xs font-black text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                        {trip._count.stops} Cities
+                      </span>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      <button 
+                        onClick={() => { if(confirm('Delete this trip? This cannot be undone.')) deleteTripMutation.mutate(trip.id) }}
+                        className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'community' && (
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-8 border-b border-gray-100">
+            <h3 className="font-black text-[#1E1B4B] font-heading text-xl uppercase tracking-wider">Feed Content Review</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                  <th className="px-8 py-5">Post Content</th>
+                  <th className="px-8 py-5">Engagement</th>
+                  <th className="px-8 py-5 text-right">Moderation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {posts?.map((post: any) => (
+                  <tr key={post.id} className="hover:bg-gray-50/30 transition-colors">
+                    <td className="px-8 py-6 max-w-md">
+                      <p className="font-black text-gray-900 text-lg leading-tight truncate">{post.title}</p>
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-1 italic">"{post.body}"</p>
+                      <p className="text-[10px] font-bold text-indigo-400 mt-2 uppercase">By {post.user.name} • {post.user.email}</p>
+                    </td>
+                    <td className="px-8 py-6 text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] font-black bg-indigo-50 text-[#6C47FF] px-2 py-1 rounded uppercase min-w-[70px]">
+                          {post._count.likes} Likes
+                        </span>
+                        <span className="text-[10px] font-black bg-amber-50 text-amber-600 px-2 py-1 rounded uppercase min-w-[70px]">
+                          {post._count.comments} Replies
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      <button 
+                        onClick={() => { if(confirm('Remove this entire post?')) deletePostMutation.mutate(post.id) }}
+                        className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation"
 import { Clock, DollarSign, Plus } from "lucide-react"
 import { AddToTripModal } from "@/components/shared/AddToTripModal"
 import { useState } from "react"
+import { SkeletonCard } from "@/components/shared/SkeletonCard"
 
 export default function ActivitiesSearch() {
   const searchParams = useSearchParams()

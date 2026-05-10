@@ -111,14 +111,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     if (body.isPublic !== undefined) {
       if (body.isPublic) {
-        await prisma.communityPost.create({
-          data: {
-            title: `Itinerary for ${trip.title}`,
-            body: trip.description || `Check out my travel plan for ${trip.title}!`,
-            tripId: trip.id,
-            userId: session.user.id,
-          }
+        // Idempotent creation: check if already exists or use upsert
+        const existingPost = await prisma.communityPost.findFirst({
+          where: { tripId: trip.id, userId: session.user.id }
         })
+        
+        if (!existingPost) {
+          await prisma.communityPost.create({
+            data: {
+              title: `Itinerary for ${trip.title}`,
+              body: trip.description || `Check out my travel plan for ${trip.title}!`,
+              tripId: trip.id,
+              userId: session.user.id,
+            }
+          })
+        }
       } else {
         await prisma.communityPost.deleteMany({
           where: {

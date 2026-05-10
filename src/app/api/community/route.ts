@@ -23,7 +23,18 @@ export async function GET(req: Request) {
     }
 
     if (filter === 'Recent') {
-      orderBy = { createdAt: 'desc' }
+      const oneDayAgo = new Date()
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1)
+      where.createdAt = { gte: oneDayAgo }
+      orderBy = [{ createdAt: 'desc' }]
+    } else if (filter === 'Most Liked') {
+      orderBy = [
+        { likes: { _count: 'desc' } },
+        { createdAt: 'desc' }
+      ]
+    } else {
+      // Default to Recent for 'All' and 'My Posts'
+      orderBy = [{ createdAt: 'desc' }]
     }
 
     const posts = await prisma.communityPost.findMany({
@@ -57,10 +68,23 @@ export async function GET(req: Request) {
       take: 5
     })
 
+    const totalPosts = await prisma.communityPost.count()
+    const activeUsersCount = await prisma.communityPost.groupBy({
+      by: ['userId'],
+      _count: { userId: true },
+      where: {
+        createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+      }
+    })
+
     return NextResponse.json({
       posts: formattedPosts,
       topDestinations: topDestinations.map(d => ({ name: d.cityName, count: d._count._all })),
-      nextPage: formattedPosts.length === limit ? page + 1 : null
+      nextPage: formattedPosts.length === limit ? page + 1 : null,
+      stats: {
+        totalPosts,
+        activeUsers: activeUsersCount.length
+      }
     })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })

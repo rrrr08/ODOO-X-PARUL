@@ -12,18 +12,64 @@ export async function GET(req: Request) {
 
     const totalUsers = await prisma.user.count()
     const totalTrips = await prisma.trip.count()
+    const communityPosts = await prisma.communityPost.count()
     
     const oneWeekAgo = new Date()
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+    const twoWeeksAgo = new Date()
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
     
+    // Active this week (any trip update)
     const activeThisWeek = await prisma.trip.count({
-      where: {
-        updatedAt: { gte: oneWeekAgo }
+      where: { updatedAt: { gte: oneWeekAgo } }
+    })
+
+    const activeLastWeek = await prisma.trip.count({
+      where: { 
+        updatedAt: { 
+          gte: twoWeeksAgo,
+          lt: oneWeekAgo
+        } 
       }
     })
 
-    const communityPosts = await prisma.communityPost.count()
+    // Calculate real changes
+    const usersLastWeek = await prisma.user.count({ where: { createdAt: { lt: oneWeekAgo } } })
+    const userChange = usersLastWeek === 0 ? 100 : Math.round(((totalUsers - usersLastWeek) / usersLastWeek) * 100)
+
+    const tripsLastWeek = await prisma.trip.count({ where: { createdAt: { lt: oneWeekAgo } } })
+    const tripsChange = tripsLastWeek === 0 ? 100 : Math.round(((totalTrips - tripsLastWeek) / tripsLastWeek) * 100)
+
+    const activeChange = activeLastWeek === 0 ? 0 : Math.round(((activeThisWeek - activeLastWeek) / activeLastWeek) * 100)
+
+    const postsLastWeek = await prisma.communityPost.count({ where: { createdAt: { lt: oneWeekAgo } } })
+    const postsChange = postsLastWeek === 0 ? 100 : Math.round(((communityPosts - postsLastWeek) / postsLastWeek) * 100)
     
+    // Growth Chart Data (Last 30 days)
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    
+    const dailyTrips = await prisma.trip.groupBy({
+      by: ['createdAt'],
+      where: { createdAt: { gte: thirtyDaysAgo } },
+      _count: { id: true }
+    })
+
+    // Format for Recharts
+    const tripsPerDayMap: Record<string, number> = {}
+    dailyTrips.forEach(d => {
+      const date = d.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      tripsPerDayMap[date] = (tripsPerDayMap[date] || 0) + d._count.id
+    })
+
+    const tripsPerDay = Array.from({length: 30}).map((_, i) => {
+      const date = new Date(Date.now() - (29-i)*86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      return {
+        date,
+        count: tripsPerDayMap[date] || 0
+      }
+    })
+
     const users = await prisma.user.findMany({
       take: 10,
       orderBy: { createdAt: 'desc' },
@@ -39,30 +85,21 @@ export async function GET(req: Request) {
 
     const topCitiesData = await prisma.stop.groupBy({
       by: ['cityName'],
-      _count: {
-        cityName: true
-      },
-      orderBy: {
-        _count: {
-          cityName: 'desc'
-        }
-      },
+      _count: { cityName: true },
+      orderBy: { _count: { cityName: 'desc' } },
       take: 5
     })
 
     return NextResponse.json({
       totalUsers,
-      totalUsersChange: 12.5,
+      totalUsersChange: userChange,
       totalTrips,
-      totalTripsChange: 8.2,
+      totalTripsChange: tripsChange,
       activeThisWeek,
-      activeThisWeekChange: -2.4,
+      activeThisWeekChange: activeChange,
       communityPosts,
-      communityPostsChange: 15.3,
-      tripsPerDay: Array.from({length: 30}).map((_, i) => ({
-        date: new Date(Date.now() - (29-i)*86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        count: Math.floor(Math.random() * 5) // Lower random for realism with small seed
-      })),
+      communityPostsChange: postsChange,
+      tripsPerDay,
       topCities: topCitiesData.map(c => ({
         name: c.cityName,
         value: c._count.cityName

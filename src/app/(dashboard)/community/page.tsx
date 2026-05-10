@@ -3,7 +3,7 @@
 import { PageHeader } from "@/components/shared/PageHeader"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Heart, MessageCircle, Share2, MapPin, Plus, Users, Globe } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { SkeletonCard } from "@/components/shared/SkeletonCard"
@@ -11,12 +11,14 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { useSession } from "next-auth/react"
 import { ShareTripModal } from "@/components/community/ShareTripModal"
+import { CommunityGuidelinesModal } from "@/components/community/CommunityGuidelinesModal"
 
 export default function CommunityTab() {
   const { data: session } = useSession()
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState("All")
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isGuidelinesOpen, setIsGuidelinesOpen] = useState(false)
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ['community-posts', filter],
@@ -29,6 +31,7 @@ export default function CommunityTab() {
   })
 
   const posts = data?.pages.flatMap(page => page.posts) || []
+  const communityStats = data?.pages[0]?.stats || { totalPosts: 0, activeUsers: 0 }
 
   return (
     <div className="space-y-8 pb-20">
@@ -45,6 +48,7 @@ export default function CommunityTab() {
       />
 
       <ShareTripModal isOpen={isShareModalOpen} onClose={() => setIsShareModalOpen(false)} />
+      <CommunityGuidelinesModal isOpen={isGuidelinesOpen} onClose={() => setIsGuidelinesOpen(false)} />
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Column - Feed */}
@@ -104,11 +108,27 @@ export default function CommunityTab() {
         <div className="lg:w-[35%] space-y-6">
           <div className="bg-gradient-to-br from-[#1E1B4B] to-[#6C47FF] rounded-2xl p-8 text-white shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-white/20 transition-colors" />
-            <h3 className="font-bold font-heading mb-3 text-xl">What is Community?</h3>
-            <p className="text-white/80 text-sm leading-relaxed mb-6">
-              Traveloop Community is where explorers like you share itineraries, get inspiration, and discover hidden gems.
+            <h3 className="font-bold font-heading mb-3 text-xl uppercase tracking-wider">Live Community</h3>
+            
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="bg-white/10 p-3 rounded-xl backdrop-blur-md">
+                <p className="text-[10px] font-black uppercase text-white/50 mb-1">Posts</p>
+                <p className="text-xl font-black">{communityStats.totalPosts}</p>
+              </div>
+              <div className="bg-white/10 p-3 rounded-xl backdrop-blur-md">
+                <p className="text-[10px] font-black uppercase text-white/50 mb-1">Active</p>
+                <p className="text-xl font-black">{communityStats.activeUsers}</p>
+              </div>
+            </div>
+
+            <p className="text-white/80 text-sm leading-relaxed mb-6 font-medium italic">
+              Join {communityStats.activeUsers} explorers sharing their journeys this week!
             </p>
-            <button className="w-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white py-3 rounded-xl text-sm font-bold transition-all border border-white/20">
+            
+            <button 
+              onClick={() => setIsGuidelinesOpen(true)}
+              className="w-full bg-white text-[#6C47FF] py-3 rounded-xl text-sm font-black transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-900/20 uppercase tracking-widest"
+            >
               Read Guidelines
             </button>
           </div>
@@ -149,6 +169,14 @@ function PostCard({ post }: { post: any }) {
   const [comments, setComments] = useState(post.comments || [])
   const [commentText, setCommentText] = useState("")
 
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    setLiked(post.isLiked)
+    setLikes(post.likesCount || 0)
+    setComments(post.comments || [])
+  }, [post.isLiked, post.likesCount, post.comments])
+
   const handleLike = async () => {
     if (isLiking) return
     setIsLiking(true)
@@ -160,6 +188,7 @@ function PostCard({ post }: { post: any }) {
 
     try {
       await axios.post('/api/community/like', { postId: post.id })
+      queryClient.invalidateQueries({ queryKey: ['community-posts'] })
     } catch (error) {
       setLiked(!newLiked)
       setLikes((prev: number) => !newLiked ? prev + 1 : prev - 1)
@@ -175,6 +204,7 @@ function PostCard({ post }: { post: any }) {
       const res = await axios.post('/api/community/comment', { postId: post.id, content: commentText })
       setComments([...comments, res.data])
       setCommentText("")
+      queryClient.invalidateQueries({ queryKey: ['community-posts'] })
       toast.success("Comment added!")
     } catch (error) {
       toast.error("Failed to add comment")

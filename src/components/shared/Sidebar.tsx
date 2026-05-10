@@ -2,9 +2,12 @@
 
 import Link from "next/link"
 import { Home, Map, Search, Users, User, Shield, LogOut, Plane } from "lucide-react"
-import { signOut } from "next-auth/react"
+import { signOut, useSession } from "next-auth/react"
 
 export function Sidebar() {
+  const { data: session } = useSession()
+  const isAdmin = session?.user?.role === 'ADMIN'
+
   return (
     <aside className="w-60 h-screen fixed left-0 top-0 bg-white border-r border-gray-200 flex flex-col justify-between hidden md:flex no-print">
       <div className="p-6">
@@ -37,10 +40,12 @@ export function Sidebar() {
             <User className="w-5 h-5" />
             <span>Profile</span>
           </Link>
-          <Link href="/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
-            <Shield className="w-5 h-5" />
-            <span>Admin</span>
-          </Link>
+          {isAdmin && (
+            <Link href="/admin" className="flex items-center gap-3 px-4 py-2 rounded-lg text-[#6C47FF] bg-indigo-50 font-bold transition-all shadow-sm">
+              <Shield className="w-5 h-5" />
+              <span>Admin</span>
+            </Link>
+          )}
           <button 
             onClick={() => signOut({ callbackUrl: '/' })}
             className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
